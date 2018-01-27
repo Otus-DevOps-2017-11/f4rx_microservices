@@ -1,0 +1,15 @@
+$ docker images
+REPOSITORY                 TAG                 IMAGE ID            CREATED             SIZE
+yourname/ubuntu-tmp-file   latest              695b11d1e0ee        17 seconds ago      112MB
+ubuntu                     16.04               0458a4468cbc        2 days ago          112MB
+hello-world                latest              f2a91732366c        2 months ago        1.85kB
+
+
+ДЗ *
+Image - просто ораз диска (hdd), контейрен это диск + запущенный процесс с выделенными ресурсами. Так у контейнера присутстует:
+* State (статус, PID, дата запуска и т.д.)
+* HostConfig (DNS, CGROUPS, память, CPU и другие настройки/лимиты)
+* Маунты (ну это логично, нет смысла маунтить с хоста в hdd)
+* NetworkSettings - сетевые настройки, тоже только у запущенного процесса
+* Config - есть и там и там
+* У Image есть мета-информация, предназначенная для запуска контейнера - ОС, архитектура и т.д.
