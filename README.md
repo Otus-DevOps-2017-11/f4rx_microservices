@@ -163,7 +163,7 @@ docker build -t f3ex/comment:1.0 ./comment
 docker build -t f3ex/ui:1.0 ./ui
 ```
 
-**Вопрос.** Обратите внимание! Cборка ui началась не спервого шага. Подумайте - почему?
+**Вопрос.** Обратите внимание! Cборка ui началась не спервого шага. Подумайте - почему?  
 **Ответ.** Использовался кеш от сборки контейнера с комментариями
 ```bash
 Step 5/13 : WORKDIR $APP_HOME
@@ -235,16 +235,16 @@ dc6c1dff7c5a        f3ex/comment:1.0    "puma"                   4 minutes ago  
 docker build -t <your-login>/ui:2.0 ./ui
 ```
 
-**Вопрос.** с какого шага началась сборка?
+**Вопрос.** с какого шага началась сборка?  
 **Ответ.** С первого, т.к. мы поменяли базовый образ и наши кеши стали не актуальные (они для другого базового образа).
 
-В ДЗ ** у меня собран образ на без alpine, поэтому версия 3.0 #FIXME
+В ДЗ ** у меня собран образ на базе alpine и ужат в рамках ДЗ ***, поэтому версия 3.1
 ```bash
 docker kill $(docker ps -q) ;\
 docker run -d --network=reddit --network-alias=post_db --network-alias=comment_db mongo:latest &&\
 docker run -d --network=reddit --network-alias=post f3ex/post:1.0 &&\
 docker run -d --network=reddit --network-alias=comment f3ex/comment:1.0 &&\
-docker run -d --network=reddit -p 9292:9292 f3ex/ui:2.0
+docker run -d --network=reddit -p 9292:9292 f3ex/ui:3.1
 ```
 
 ```bash
@@ -254,7 +254,7 @@ docker kill $(docker ps -q) ;\
 docker run -d --network=reddit --network-alias=post_db --network-alias=comment_db -v reddit_db:/data/db mongo:latest &&\
 docker run -d --network=reddit --network-alias=post f3ex/post:1.0 &&\
 docker run -d --network=reddit --network-alias=comment f3ex/comment:1.0 &&\
-docker run -d --network=reddit -p 9292:9292 f3ex/ui:3.0
+docker run -d --network=reddit -p 9292:9292 f3ex/ui:3.1
 ```
 
 Теперь пост остается при перезапуске контейнеров.
@@ -282,7 +282,7 @@ docker run --env POST_SERVICE_HOST=new_post --env COMMENT_SERVICE_HOST=new_comme
 ```
 
 ## ДЗ ** (Сборка с alpine)
-Образ занимает 205MB Мб, и то часть можно почистить. В ДЗ *** получилось уменьшить образ до 60 Мб 
+Образ занимает 205MB Мб, и то часть можно почистить. В ДЗ *** получилось уменьшить образ до 37.5 Мб 
 Dockerfile:
 ```bash
 FROM alpine
