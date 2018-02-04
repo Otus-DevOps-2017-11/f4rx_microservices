@@ -344,6 +344,22 @@ f3ex/ui             2.0                 7816083278f9        10 hours ago        
 f3ex/ui             1.0                 5b97ad913b7a        12 hours ago         775MB
 ```
 
+Если дропнуть кеши и ненужные либы, получилось ужать до 37.5 Мб
+```Dockerfile
+RUN apk add --no-cache build-base ruby ruby-bundler ruby-dev ruby-json && \
+    gem install bundler --no-ri --no-rdoc && bundle install && apk del build-base ruby-dev && \
+    rm -rf /usr/share/terminfo/ && rm -rf /root/.bundle/cache/
+```
+
+```bash
+$ docker image ls f3ex/ui
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+f3ex/ui             3.1                 5d61a248f112        3 seconds ago       37.5MB
+f3ex/ui             3.0                 f653c0094d88        About an hour ago   205MB
+f3ex/ui             2.0                 7816083278f9        11 hours ago        453MB
+f3ex/ui             1.0                 5b97ad913b7a        12 hours ago        775MB
+```
+
 # HW 15 Docker-2
 
 Развернили в GCP виртуальные машину в качетстве docker-хоста, создали свой докерфайл, собрали имадж(?), и запустили докер-контейнер.

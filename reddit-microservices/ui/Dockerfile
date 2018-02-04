@@ -12,6 +12,7 @@ ADD . $APP_HOME
 
 # Почему нет ruby-json в зависимостях в Gemfile ????
 RUN apk add --no-cache build-base ruby ruby-bundler ruby-dev ruby-json && \
-    gem install bundler --no-ri --no-rdoc && cd $APP_HOME && bundle install && apk del build-base
+    gem install bundler --no-ri --no-rdoc && bundle install && apk del build-base ruby-dev && \
+    rm -rf /usr/share/terminfo/ && rm -rf /root/.bundle/cache/
 
 CMD ["puma"]
