@@ -5,19 +5,362 @@ Table of Contents
 
    * [Aleksey Stepanenko](#aleksey-stepanenko)
    * [Table of Contents](#table-of-contents)
-   * [HW 16 Dockder-3](#hw-16-dockder-3)
+   * [HW 17 Docker-4](#hw-17-docker-4)
       * [Основное задание](#Основное-задание)
+      * [ДЗ ** (Bridge network driver)](#ДЗ--bridge-network-driver)
+      * [HW 17 ДЗ***](#hw-17-ДЗ)
+      * [17 ДЗ**** (Override)](#17-ДЗ-override)
+   * [HW 16 Dockder-3](#hw-16-dockder-3)
+      * [Основное задание](#Основное-задание-1)
       * [ДЗ * (Сетевые алиасы)](#ДЗ--Сетевые-алиасы)
       * [ДЗ ** (Сборка с alpine)](#ДЗ--Сборка-с-alpine)
       * [ДЗ *** (Ужать образ)](#ДЗ--Ужать-образ)
    * [HW 15 Docker-2](#hw-15-docker-2)
-      * [Основное задание](#Основное-задание-1)
+      * [Основное задание](#Основное-задание-2)
       * [ДЗ *](#ДЗ-)
    * [HW 14 Docker-1](#hw-14-docker-1)
-      * [Основное задание](#Основное-задание-2)
+      * [Основное задание](#Основное-задание-3)
       * [ДЗ *](#ДЗ--1)
 
 Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
+
+# HW 17 Docker-4
+
+## Основное задание
+
+```bash
+#None network driver
+docker run --network none --rm -d --name net_test joffotron/docker-net-tools -c "sleep 100"
+docker exec -ti net_test ifconfig
+# Тут виден только loopback интерфейс
+
+
+# Host network driver
+docker run --network host --rm -d --name net_test joffotron/docker-net-tools -c "sleep 100"
+# Сравните выводы команд:
+docker exec -ti net_test ifconfig
+docker-machine ssh docker-host ifconfig
+# Вывод совпадает, в контейнер прокинуты все хостовые сети
+
+docker run --network host -d nginx
+# Запустите несколько раз (2-4)
+$ docker ps
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                    NAMES
+54f131b625aa        nginx               "nginx -g 'daemon of…"   2 seconds ago       Up 2 seconds                                 pensive_bell
+1fb4b7667f47        nginx               "nginx -g 'daemon of…"   29 seconds ago      Up 28 seconds                                trusting_wing
+..
+
+$ docker ps
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                    NAMES
+1fb4b7667f47        nginx               "nginx -g 'daemon of…"   31 seconds ago      Up 31 seconds                                trusting_wing
+
+# nginx-контейнеры завершаются, т.к. не могут подключиться к 80-му порту (он занят первым контейнером). 
+$ docker run --network host -t nginx
+2018/02/06 06:42:44 [emerg] 1#1: bind() to 0.0.0.0:80 failed (98: Address already in use)
+nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)
+2018/02/06 06:42:44 [emerg] 1#1: bind() to 0.0.0.0:80 failed (98: Address already in use)
+nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)
+2018/02/06 06:42:44 [emerg] 1#1: bind() to 0.0.0.0:80 failed (98: Address already in use)
+nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)
+2018/02/06 06:42:44 [emerg] 1#1: bind() to 0.0.0.0:80 failed (98: Address already in use)
+nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)
+2018/02/06 06:42:44 [emerg] 1#1: bind() to 0.0.0.0:80 failed (98: Address already in use)
+nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)
+2018/02/06 06:42:44 [emerg] 1#1: still could not bind()
+nginx: [emerg] still could not bind()
+
+# Как посмотреть логи уже выключенного контейнера ?
+$ docker ps -a
+CONTAINER ID        IMAGE               COMMAND                  CREATED              STATUS                      PORTS                    NAMES
+8059bf765b04        nginx               "nginx -g 'daemon of…"   32 seconds ago       Exited (1) 30 seconds ago                            pensive_spence
+ec69bfc97771        nginx               "nginx -g 'daemon of…"   About a minute ago   Exited (0) 41 seconds ago                            sad_poitras
+54f131b625aa        nginx               "nginx -g 'daemon of…"   3 minutes ago        Exited (1) 3 minutes ago                             pensive_bell
+65a783b4ed1d        nginx               "nginx -g 'daemon of…"   3 minutes ago        Exited (1) 3 minutes ago                             agitated_bose
+fc630cd31fe4        nginx               "nginx -g 'daemon of…"   3 minutes ago        Exited (1) 3 minutes ago                             tender_noether
+8fdff56a3bcd        nginx               "nginx -g 'daemon of…"   3 minutes ago        Exited (1) 3 minutes ago                             eager_feynman
+8b8c7c328a46        nginx               "nginx -g 'daemon of…"   3 minutes ago        Exited (1) 3 minutes ago                             goofy_hugle
+1fb4b7667f47        nginx               "nginx -g 'daemon of…"   4 minutes ago        Up 4 minutes                                         trusting_wing
+...
+
+# Ответ
+$ docker logs 8b8c7c328a46
+2018/02/06 06:39:17 [emerg] 1#1: bind() to 0.0.0.0:80 failed (98: Address already in use)
+nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)
+2018/02/06 06:39:17 [emerg] 1#1: bind() to 0.0.0.0:80 failed (98: Address already in use)
+nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)
+2018/02/06 06:39:17 [emerg] 1#1: bind() to 0.0.0.0:80 failed (98: Address already in use)
+nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)
+2018/02/06 06:39:17 [emerg] 1#1: bind() to 0.0.0.0:80 failed (98: Address already in use)
+nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)
+2018/02/06 06:39:17 [emerg] 1#1: bind() to 0.0.0.0:80 failed (98: Address already in use)
+nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)
+2018/02/06 06:39:17 [emerg] 1#1: still could not bind()
+nginx: [emerg] still could not bind()
+
+# Остановить все контейнеры
+docker kill $(docker ps -q)
+```
+
+**ДЗ \***
+
+```bash
+# Заходим на докер-хост
+docker-machine ssh docker-host
+sudo ln -s /var/run/docker/netns /var/run/netns
+
+$ sudo ip netns
+default
+
+#None network driver
+docker run --network none --rm -d --name net_test joffotron/docker-net-tools -c "sleep 100"
+$ docker-machine ssh docker-host sudo ip netns
+791b14dfa49b
+default
+
+docker run --network host --rm -d --name net_test joffotron/docker-net-tools -c "sleep 100"
+$ docker-machine ssh docker-host sudo ip netns
+RTNETLINK answers: Invalid argument
+RTNETLINK answers: Invalid argument
+791b14dfa49b
+default
+```
+
+
+
+
+```bash
+# Создадим bridge-сеть в docker (флаг --driver указывать необязательно, т.к. по-умолчанию используется bridge
+$ docker network create reddit --driver bridge
+Error response from daemon: network with name reddit already exists
+# Она создана на предыдущем занятие. Запишу как смотреть сети и пересоздавать ее
+$ docker network ls
+NETWORK ID          NAME                DRIVER              SCOPE
+2b5b87b34cdf        bridge              bridge              local
+327914d53ab0        host                host                local
+f15cf539fa3e        none                null                local
+8be2c5d0abe1        reddit              bridge              local
+$ docker network rm 8be2c5d0abe1
+8be2c5d0abe1
+$ docker network create reddit --driver bridge
+851cc9e34a68cbf501a546612b9fc269ed2c687cfc45cb49f65ae00b1ae7962e
+
+# Запустим наш проект reddit с использованием bridge-сети
+docker run -d --network=reddit mongo:latest &&\
+docker run -d --network=reddit f3ex/post:1.0 &&\
+docker run -d --network=reddit f3ex/comment:1.0 &&\
+docker run -d --network=reddit -p 9292:9292 f3ex/ui:1.0
+
+# Проверяем, не работает. Нет подключения к БД.
+
+# Решением проблемы будет присвоение контейнерам имен или сетевых алиасов при старте:
+# --name <name> (можно задать только 1 имя)
+# --network-alias <alias-name> (можно задать множество алиасов)
+
+docker kill $(docker ps -q) ;\
+docker run -d --network=reddit --network-alias=post_db --network-alias=comment_db mongo:latest &&\
+docker run -d --network=reddit --network-alias=post f3ex/post:1.0 &&\
+docker run -d --network=reddit --network-alias=comment f3ex/comment:1.0 &&\
+docker run -d --network=reddit -p 9292:9292 f3ex/ui:1.0
+```
+
+```bash
+# Создадим docker-сети
+docker network create back_net --subnet=10.0.2.0/24
+docker network create front_net --subnet=10.0.1.0/24
+
+docker run -d --network=front_net -p 9292:9292 --name ui f3ex/ui:1.0 &&\
+docker run -d --network=back_net --name comment f3ex/comment:1.0 &&\
+docker run -d --network=back_net --name post f3ex/post:1.0 &&\
+docker run -d --network=back_net --name mongo_db --network-alias=post_db --network-alias=comment_db mongo:latest
+
+# Из-за того, что мы используем name и после остановки через kill - мы не можем запустить новый котнейнер.
+# В моем случае пропал "-" при копирование из слайда и я решил "килльнуть" все вм и пересоздать, и получил ошибку:
+docker: Error response from daemon: Conflict. The container name "/ui" is already in use by container "19c9e88a4f5f3d8b4003111c0df9ae3f05dc92539737802c28e6c9634b5c6f48". You have to remove (or rename) that container to be able to reuse that name.
+See 'docker run --help'
+# Решил удалить все выключенные контейнеры
+$ docker container prune
+WARNING! This will remove all stopped containers.
+Are you sure you want to continue? [y/N] y
+Deleted Containers:
+28fe3e5183ca7192514d0b877a80b79d476c43595de305a93c8b6727bc339031
+...
+Total reclaimed space: 41.42MB
+
+$ docker ps -a
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
+
+
+# Docker при инициализации контейнера может подключить к нему только 1 сеть.
+# Дополнительные сети подключаются командой:
+> docker network connect <network> <container>
+
+docker network connect front_net post
+docker network connect front_net comment
+```
+
+Docker compose
+```bash
+export USERNAME=f3ex
+# т.к. конейнеры уже есть, получаем ошибку
+$ docker-compose up -d
+...
+Creating redditmicroservices_ui_1      ... error
+...
+
+ERROR: for ui  Cannot start service ui: driver failed programming external connectivity on endpoint redditmicroservices_ui_1 (97234a35ae7296d6d7d1f15562fe9361f63d1a69730a73abf0cb16858a306fcd): Bind for 0.0.0.0:9292 failed: port is already allocated
+ERROR: Encountered errors while bringing up the project.
+
+$ docker-compose ps
+            Name                          Command              State       Ports
+----------------------------------------------------------------------------------
+redditmicroservices_comment_1   puma                          Up
+redditmicroservices_post_1      python3 post_app.py           Up
+redditmicroservices_post_db_1   docker-entrypoint.sh mongod   Up         27017/tcp
+redditmicroservices_ui_1        puma                          Exit 128
+
+# Останавливаем контейнеры в композе
+$ docker-compose stop
+Stopping redditmicroservices_post_db_1 ... done
+Stopping redditmicroservices_post_1    ... done
+Stopping redditmicroservices_comment_1 ... done
+
+# Убиваем запущенные ранее
+$ docker kill $(docker ps -q)
+55cb13d016a1
+9e7a0841088c
+f767a53e8fb6
+cb0c9532cbf3
+
+# Перезапускаем
+$ docker-compose up -d
+Starting redditmicroservices_comment_1 ...
+Starting redditmicroservices_ui_1 ...
+Starting redditmicroservices_post_1 ...
+Starting redditmicroservices_post_1 ... done
+
+# Проверяем
+$ docker-compose ps
+            Name                          Command             State           Ports
+--------------------------------------------------------------------------------------------
+redditmicroservices_comment_1   puma                          Up
+redditmicroservices_post_1      python3 post_app.py           Up
+redditmicroservices_post_db_1   docker-entrypoint.sh mongod   Up      27017/tcp
+redditmicroservices_ui_1        puma                          Up      0.0.0.0:9292->9292/tcp
+
+
+```
+
+## ДЗ ** (Bridge network driver)
+```bash
+docker-machine ssh docker-host
+sudo apt update && sudo apt install bridge-utils
+$ sudo docker network ls
+NETWORK ID          NAME                DRIVER              SCOPE
+44fcc5ac9278        back_net            bridge              local
+2b5b87b34cdf        bridge              bridge              local
+f8b1242c0e61        front_net           bridge              local
+327914d53ab0        host                host                local
+f15cf539fa3e        none                null                local
+851cc9e34a68        reddit              bridge              local
+
+$ ifconfig | grep br
+br-44fcc5ac9278 Link encap:Ethernet  HWaddr 02:42:0a:f9:3c:64
+br-851cc9e34a68 Link encap:Ethernet  HWaddr 02:42:ad:d2:2c:f7
+br-f8b1242c0e61 Link encap:Ethernet  HWaddr 02:42:23:05:65:e1
+
+$ brctl show br-f8b1242c0e61
+bridge name	bridge id		STP enabled	interfaces
+br-f8b1242c0e61		8000.0242230565e1	no		veth017ae9b
+							veth956cd50
+							vetha32dc0e
+
+$ brctl show br-44fcc5ac9278
+bridge name	bridge id		STP enabled	interfaces
+br-44fcc5ac9278		8000.02420af93c64	no		veth84c2e64
+							vethbc5b7e3
+							vethc783527
+
+$ brctl show br-851cc9e34a68
+bridge name	bridge id		STP enabled	interfaces
+br-851cc9e34a68		8000.0242add22cf7	no
+
+$  sudo iptables -nL -t nat
+Chain PREROUTING (policy ACCEPT)
+target     prot opt source               destination
+DOCKER     all  --  0.0.0.0/0            0.0.0.0/0            ADDRTYPE match dst-type LOCAL
+
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination
+DOCKER     all  --  0.0.0.0/0           !127.0.0.0/8          ADDRTYPE match dst-type LOCAL
+
+Chain POSTROUTING (policy ACCEPT)
+target     prot opt source               destination
+MASQUERADE  all  --  10.0.1.0/24          0.0.0.0/0
+MASQUERADE  all  --  10.0.2.0/24          0.0.0.0/0
+MASQUERADE  all  --  172.18.0.0/16        0.0.0.0/0
+MASQUERADE  all  --  172.17.0.0/16        0.0.0.0/0
+MASQUERADE  tcp  --  10.0.1.2             10.0.1.2             tcp dpt:9292
+
+Chain DOCKER (2 references)
+target     prot opt source               destination
+RETURN     all  --  0.0.0.0/0            0.0.0.0/0
+RETURN     all  --  0.0.0.0/0            0.0.0.0/0
+RETURN     all  --  0.0.0.0/0            0.0.0.0/0
+RETURN     all  --  0.0.0.0/0            0.0.0.0/0
+DNAT       tcp  --  0.0.0.0/0            0.0.0.0/0            tcp dpt:9292 to:10.0.1.2:9292
+
+$ ps ax | grep [d]ocker-proxy
+ 6138 ?        Sl     0:00 /usr/bin/docker-proxy -proto tcp -host-ip 0.0.0.0 -host-port 9292 -container-ip 10.0.1.2 -container-port 9292
+```
+
+## HW 17 ДЗ***
+redditmicroservices_comment_1  
+COMPOSE_PROJECT_NAME  
+Sets the project name. This value is prepended along with the service name to the container on start up. For example, if your project name is myapp and it includes two services db and web, then Compose starts containers named myapp_db_1 and myapp_web_1 respectively.
+
+```bash
+container_name
+Specify a custom container name, rather than a generated default name.
+
+container_name: my-web-container
+Because Docker container names must be unique, you cannot scale a service beyond 1 container if you have specified a custom name. Attempting to do so results in an error.
+
+Note: This option is ignored when deploying a stack in swarm mode with a (version 3) Compose file.
+```
+```bash
+$ docker-compose ps
+  Name                Command             State           Ports
+------------------------------------------------------------------------
+c_comment   puma                          Up
+c_post      python3 post_app.py           Up
+c_post_db   docker-entrypoint.sh mongod   Up      27017/tcp
+c_ui        puma                          Up      0.0.0.0:9292->9292/tcp
+```
+
+## 17 ДЗ**** (Override)
+Тома будут пробрасываться с хостовой машины (docker-host), а не с ноутбука
+```yaml
+version: '3.3'
+services:
+
+  ui:
+    command: ["puma", "--debug", "-w", "2"]
+#    volumes:
+#      - /apps/ui:/app
+
+#  post:
+#    volumes:
+#      - /apps/post-py:/app
+
+  comment:
+    command: ["puma", "--debug", "-w", "2"]
+#    volumes:
+#      - /apps/comment:/app
+
+```
 
 # HW 16 Dockder-3
 
