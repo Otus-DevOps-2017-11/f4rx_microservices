@@ -251,6 +251,9 @@ Registering runner... succeeded                     runner=TVnFHoHz
 Runner registered successfully. Feel free to start it, but if it's running already the config should be automatically reloaded!
 ```
 
+Теперь два теста работают параллельно, только судя по всему это не будет работать, т.к. образ докер с шага build есть только
+на одном раннере. Надо делать как-то через артифакты...
+
 # HW 17 Docker-4
 
 ## Основное задание
