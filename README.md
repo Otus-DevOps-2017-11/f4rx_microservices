@@ -183,7 +183,6 @@ git add reddit/
 git commit -m "Add reddit app"
 git push gitlab docker-6
 ```
-ahbaira9choJahs5hoodoo5eiXang6un - чтобы не забыть
 
 ## ДЗ * (Авто регистрация Runner)
 
@@ -253,6 +252,9 @@ Runner registered successfully. Feel free to start it, but if it's running alrea
 
 Теперь два теста работают параллельно, только судя по всему это не будет работать, т.к. образ докер с шага build есть только
 на одном раннере. Надо делать как-то через артифакты...
+```bash
+ERROR: Job failed (system failure): Error: No such container: dccd19b9b378b751df9c5e79383a2566a16aa044ce5ee4ae15893d9bd112bfb3
+```
 
 # HW 17 Docker-4
 
