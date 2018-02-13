@@ -5,6 +5,9 @@ Table of Contents
 
    * [Aleksey Stepanenko](#aleksey-stepanenko)
    * [Table of Contents](#table-of-contents)
+   * [HW 19 Docker-6](#hw-19-docker-6)
+      * [ДЗ * (Авто регистрация Runner)](#ДЗ--Авто-регистрация-runner)
+      * [ДЗ ** (Нотификация в слак)](#ДЗ--Нотификация-в-слак)
    * [HW 17 Docker-4](#hw-17-docker-4)
       * [Основное задание](#Основное-задание)
       * [ДЗ ** (Bridge network driver)](#ДЗ--bridge-network-driver)
@@ -255,6 +258,9 @@ Runner registered successfully. Feel free to start it, but if it's running alrea
 ```bash
 ERROR: Job failed (system failure): Error: No such container: dccd19b9b378b751df9c5e79383a2566a16aa044ce5ee4ae15893d9bd112bfb3
 ```
+
+## ДЗ ** (Нотификация в слак)
+Нотификации идут в канал https://devops-team-otus.slack.com/messages/C8C9R4J1J/details/?
 
 # HW 17 Docker-4
 
