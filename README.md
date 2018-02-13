@@ -129,6 +129,61 @@ Creating hw19_web_1 ... done
 open http://$IP/
 ```
 
+
+```bash
+$ git remote add gitlab http://$IP/homework/example.git
+
+$ git push gitlab docker-6
+Username for 'http://35.205.71.166': root
+Password for 'http://root@35.205.71.166':
+Counting objects: 87, done.
+Delta compression using up to 4 threads.
+Compressing objects: 100% (76/76), done.
+Writing objects: 100% (87/87), 28.63 KiB | 792.00 KiB/s, done.
+Total 87 (delta 19), reused 0 (delta 0)
+To http://35.205.71.166/homework/example.git
+ * [new branch]      docker-6 -> docker-6
+```
+
+Тут добавили .gitlab-ci.yaml, скопировали токен раннера
+
+```bash
+docker run -d --name gitlab-runner --restart always \
+-v /srv/gitlab-runner/config:/etc/gitlab-runner \
+-v /var/run/docker.sock:/var/run/docker.sock \
+gitlab/gitlab-runner:latest
+
+$ docker exec -it gitlab-runner gitlab-runner register
+Running in system-mode.
+
+Please enter the gitlab-ci coordinator URL (e.g. https://gitlab.com/):
+http://35.205.71.166
+Please enter the gitlab-ci token for this runner:
+TVnFHoHzM
+Please enter the gitlab-ci description for this runner:
+[7a7e35a1ed25]: my-runner
+Please enter the gitlab-ci tags for this runner (comma separated):
+linux,xenial,ubuntu,docker
+Whether to run untagged builds [true/false]:
+[false]: true
+Whether to lock the Runner to current project [true/false]:
+[true]: false
+Registering runner... succeeded                     runner=TVnFHoHz
+Please enter the executor: docker, docker-ssh, parallels, virtualbox, docker+machine, shell, ssh, docker-ssh+machine, kubernetes:
+docker
+Please enter the default Docker image (e.g. ruby:2.1):
+alpine:latest
+Runner registered successfully. Feel free to start it, but if it's running already the config should be automatically reloaded!
+```
+
+```bash
+git clone https://github.com/express42/reddit.git && rm -rf ./reddit/.git
+git add reddit/
+git commit -m "Add reddit app"
+git push gitlab docker-6
+```
+ahbaira9choJahs5hoodoo5eiXang6un - чтобы не забыть
+
 # HW 17 Docker-4
 
 ## Основное задание
