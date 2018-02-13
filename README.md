@@ -24,6 +24,111 @@ Table of Contents
 
 Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 
+# HW 19 Docker-6
+
+```bash
+cd terraform-gitlab
+terraform init
+$ terraform apply
+...
+Outputs:
+
+gitlab_external_ip = 35.195.159.209
+
+$ terraform output gitlab_external_ip
+35.195.159.209
+
+# Выключить инстанс
+gcloud compute instances stop gitlab
+
+# Включить интсанс
+gcloud compute instances start gitlab
+```
+
+Я мог бы сразу создать ВМ через `docker-machine create` с драйвером гугла, но решил проверить такой юзкейс, когда уже есть
+просто ВМ, к примеру я купил ВДС за 3$ и решил на готовой ВДС  развернуть докер-инфраструктуру. 
+
+sshguard блокировал мой адрес при создание docker-machine, я решил его отключить через терраформ
+```hcl-terraform
+  provisioner "remote-exec" {
+    inline = [
+      "sudo systemctl stop sshguard",
+      "sudo systemctl disable sshguard",
+    ]
+  }
+```
+
+```bash
+$ terraform output gitlab_external_ip
+35.205.141.53
+
+$ docker-machine create --driver generic --generic-ip-address=$(terraform output gitlab_external_ip) \
+   --generic-ssh-user=subadm --generic-ssh-key ~/.ssh/appuser otus-gitlab
+Running pre-create checks...
+Creating machine...
+(otus-gitlab) Importing SSH key...
+Waiting for machine to be running, this may take a few minutes...
+Detecting operating system of created instance...
+Waiting for SSH to be available...
+Detecting the provisioner...
+Provisioning with ubuntu(systemd)...
+Installing Docker...
+Copying certs to the local machine directory...
+Copying certs to the remote machine...
+Setting Docker configuration on the remote daemon...
+Checking connection to Docker...
+Docker is up and running!
+To see how to connect your Docker Client to the Docker Engine running on this virtual machine, run: docker-machine env otus-gitlab
+
+$ docker-machine ls
+NAME          ACTIVE   DRIVER       STATE     URL                         SWARM   DOCKER        ERRORS
+default       -        virtualbox   Running   tcp://192.168.99.100:2376           v18.01.0-ce
+otus-gitlab   -        generic      Running   tcp://35.205.71.166:2376            v18.02.0-ce
+
+$ docker-machine status otus-gitlab
+Running
+
+$ docker-machine env otus-gitlab
+export DOCKER_TLS_VERIFY="1"
+export DOCKER_HOST="tcp://35.205.71.166:2376"
+export DOCKER_CERT_PATH="/Users/f3ex/.docker/machine/machines/otus-gitlab"
+export DOCKER_MACHINE_NAME="otus-gitlab"
+# Run this command to configure your shell:
+# eval $(docker-machine env otus-gitlab)
+
+$ eval $(docker-machine env otus-gitlab)
+
+# Активируем ВМ
+$ docker-machine ls
+NAME          ACTIVE   DRIVER       STATE     URL                         SWARM   DOCKER        ERRORS
+default       -        virtualbox   Running   tcp://192.168.99.100:2376           v18.01.0-ce
+otus-gitlab   *        generic      Running   tcp://35.205.71.166:2376            v18.02.0-ce
+```
+
+```bash
+docker-machine ssh otus-gitlab "sudo mkdir -p /srv/gitlab/config /srv/gitlab/data /srv/gitlab/logs"
+```
+
+Из корня репозитория выполнить:
+```bash
+mkdir hw_19
+cd hw_19
+
+wget https://gitlab.com/gitlab-org/omnibus-gitlab/raw/master/docker/docker-compose.yml
+
+# Меняем IP и ssh-порт
+IP=$(terraform output  -state=../terraform-gitlab/terraform.tfstate gitlab_external_ip); \
+sed -i "" "s/external_url.*/external_url 'http:\/\/$IP'/g" docker-compose.yml && \
+sed -i "" "s/22:22/2222:22/g" docker-compose.yml
+
+# Запускаем
+$ docker-compose up -d
+Creating hw19_web_1 ... done
+
+# Проверяем
+open http://$IP/
+```
+
 # HW 17 Docker-4
 
 ## Основное задание
