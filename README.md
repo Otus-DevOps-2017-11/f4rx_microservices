@@ -29,6 +29,8 @@ Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 
 # HW 19 Docker-6
 
+Развернуть хост
+
 ```bash
 cd terraform-gitlab
 terraform init
@@ -200,27 +202,6 @@ export REGISTER_NON_INTERACTIVE=true
 gitlab-runner register
 ```
 
-Можно передать в котнейнер /etc/gitlab-runner/config.toml
-```bash
-cat /etc/gitlab-runner/config.toml
-concurrent = 1
-check_interval = 0
-
-[[runners]]
-  name = "my-runner"
-  url = "http://35.205.71.166"
-  token = "4f1bc6fbb5"
-  executor = "docker"
-  [runners.docker]
-    tls_verify = false
-    image = "alpine:latest"
-    privileged = false
-    disable_cache = false
-    volumes = ["/cache"]
-    shm_size = 0
-  [runners.cache]
-```
-
 ```bash
 docker run -d --name gitlab-runner-2 --restart always \
 -v /srv/gitlab-runner/config:/etc/gitlab-runner \
@@ -254,9 +235,19 @@ Runner registered successfully. Feel free to start it, but if it's running alrea
 ```
 
 Теперь два теста работают параллельно, только судя по всему это не будет работать, т.к. образ докер с шага build есть только
-на одном раннере. Надо делать как-то через артифакты...
+на одном раннере. Надо делать как-то через артифакты... В общем непонятно пока, т.к. переодически получал ошибку, а иногда билд собирался..:
 ```bash
 ERROR: Job failed (system failure): Error: No such container: dccd19b9b378b751df9c5e79383a2566a16aa044ce5ee4ae15893d9bd112bfb3
+```
+
+Теперь можно создать хоть 100, хоть 1000 ранеров:
+```bash
+for i in `seq 1 100`
+do
+  docker run -d --name gitlab-runner-${i} ...
+  docker exec -it gitlab-runner-${i} --description my-runner-${i} ...
+done
+
 ```
 
 ## ДЗ ** (Нотификация в слак)
