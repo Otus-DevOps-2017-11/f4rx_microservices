@@ -5,6 +5,9 @@ Table of Contents
 
    * [Aleksey Stepanenko](#aleksey-stepanenko)
    * [Table of Contents](#table-of-contents)
+   * [HW 19 Docker-6](#hw-19-docker-6)
+      * [ДЗ * (Авто регистрация Runner)](#ДЗ--Авто-регистрация-runner)
+      * [ДЗ ** (Нотификация в слак)](#ДЗ--Нотификация-в-слак)
    * [HW 17 Docker-4](#hw-17-docker-4)
       * [Основное задание](#Основное-задание)
       * [ДЗ ** (Bridge network driver)](#ДЗ--bridge-network-driver)
@@ -23,6 +26,232 @@ Table of Contents
       * [ДЗ *](#ДЗ--1)
 
 Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
+
+# HW 19 Docker-6
+
+Развернуть хост
+
+```bash
+cd terraform-gitlab
+terraform init
+$ terraform apply
+...
+Outputs:
+
+gitlab_external_ip = 35.195.159.209
+
+$ terraform output gitlab_external_ip
+35.195.159.209
+
+# Выключить инстанс
+gcloud compute instances stop gitlab
+
+# Включить интсанс
+gcloud compute instances start gitlab
+```
+
+Я мог бы сразу создать ВМ через `docker-machine create` с драйвером гугла, но решил проверить такой юзкейс, когда уже есть
+просто ВМ, к примеру я купил ВДС за 3$ и решил на готовой ВДС  развернуть докер-инфраструктуру. 
+
+sshguard блокировал мой адрес при создание docker-machine, я решил его отключить через терраформ
+```hcl-terraform
+  provisioner "remote-exec" {
+    inline = [
+      "sudo systemctl stop sshguard",
+      "sudo systemctl disable sshguard",
+    ]
+  }
+```
+
+```bash
+$ terraform output gitlab_external_ip
+35.205.141.53
+
+$ docker-machine create --driver generic --generic-ip-address=$(terraform output gitlab_external_ip) \
+   --generic-ssh-user=subadm --generic-ssh-key ~/.ssh/appuser otus-gitlab
+Running pre-create checks...
+Creating machine...
+(otus-gitlab) Importing SSH key...
+Waiting for machine to be running, this may take a few minutes...
+Detecting operating system of created instance...
+Waiting for SSH to be available...
+Detecting the provisioner...
+Provisioning with ubuntu(systemd)...
+Installing Docker...
+Copying certs to the local machine directory...
+Copying certs to the remote machine...
+Setting Docker configuration on the remote daemon...
+Checking connection to Docker...
+Docker is up and running!
+To see how to connect your Docker Client to the Docker Engine running on this virtual machine, run: docker-machine env otus-gitlab
+
+$ docker-machine ls
+NAME          ACTIVE   DRIVER       STATE     URL                         SWARM   DOCKER        ERRORS
+default       -        virtualbox   Running   tcp://192.168.99.100:2376           v18.01.0-ce
+otus-gitlab   -        generic      Running   tcp://35.205.71.166:2376            v18.02.0-ce
+
+$ docker-machine status otus-gitlab
+Running
+
+$ docker-machine env otus-gitlab
+export DOCKER_TLS_VERIFY="1"
+export DOCKER_HOST="tcp://35.205.71.166:2376"
+export DOCKER_CERT_PATH="/Users/f3ex/.docker/machine/machines/otus-gitlab"
+export DOCKER_MACHINE_NAME="otus-gitlab"
+# Run this command to configure your shell:
+# eval $(docker-machine env otus-gitlab)
+
+$ eval $(docker-machine env otus-gitlab)
+
+# Активируем ВМ
+$ docker-machine ls
+NAME          ACTIVE   DRIVER       STATE     URL                         SWARM   DOCKER        ERRORS
+default       -        virtualbox   Running   tcp://192.168.99.100:2376           v18.01.0-ce
+otus-gitlab   *        generic      Running   tcp://35.205.71.166:2376            v18.02.0-ce
+```
+
+```bash
+docker-machine ssh otus-gitlab "sudo mkdir -p /srv/gitlab/config /srv/gitlab/data /srv/gitlab/logs"
+```
+
+Из корня репозитория выполнить:
+```bash
+mkdir hw_19
+cd hw_19
+
+wget https://gitlab.com/gitlab-org/omnibus-gitlab/raw/master/docker/docker-compose.yml
+
+# Меняем IP и ssh-порт
+IP=$(terraform output  -state=../terraform-gitlab/terraform.tfstate gitlab_external_ip); \
+sed -i "" "s/external_url.*/external_url 'http:\/\/$IP'/g" docker-compose.yml && \
+sed -i "" "s/22:22/2222:22/g" docker-compose.yml
+
+# Запускаем
+$ docker-compose up -d
+Creating hw19_web_1 ... done
+
+# Проверяем
+open http://$IP/
+```
+
+
+```bash
+$ git remote add gitlab http://$IP/homework/example.git
+
+$ git push gitlab docker-6
+Username for 'http://35.205.71.166': root
+Password for 'http://root@35.205.71.166':
+Counting objects: 87, done.
+Delta compression using up to 4 threads.
+Compressing objects: 100% (76/76), done.
+Writing objects: 100% (87/87), 28.63 KiB | 792.00 KiB/s, done.
+Total 87 (delta 19), reused 0 (delta 0)
+To http://35.205.71.166/homework/example.git
+ * [new branch]      docker-6 -> docker-6
+```
+
+Тут добавили .gitlab-ci.yml, скопировали токен раннера из веб-интерфейса
+
+Создаем новый раннер и регистрируем его
+```bash
+docker run -d --name gitlab-runner --restart always \
+-v /srv/gitlab-runner/config:/etc/gitlab-runner \
+-v /var/run/docker.sock:/var/run/docker.sock \
+gitlab/gitlab-runner:latest
+
+$ docker exec -it gitlab-runner gitlab-runner register
+Running in system-mode.
+
+Please enter the gitlab-ci coordinator URL (e.g. https://gitlab.com/):
+http://35.205.71.166
+Please enter the gitlab-ci token for this runner:
+TVnFHoHzM
+Please enter the gitlab-ci description for this runner:
+[7a7e35a1ed25]: my-runner
+Please enter the gitlab-ci tags for this runner (comma separated):
+linux,xenial,ubuntu,docker
+Whether to run untagged builds [true/false]:
+[false]: true
+Whether to lock the Runner to current project [true/false]:
+[true]: false
+Registering runner... succeeded                     runner=TVnFHoHz
+Please enter the executor: docker, docker-ssh, parallels, virtualbox, docker+machine, shell, ssh, docker-ssh+machine, kubernetes:
+docker
+Please enter the default Docker image (e.g. ruby:2.1):
+alpine:latest
+Runner registered successfully. Feel free to start it, but if it's running already the config should be automatically reloaded!
+```
+
+```bash
+git clone https://github.com/express42/reddit.git && rm -rf ./reddit/.git
+git add reddit/
+git commit -m "Add reddit app"
+git push gitlab docker-6
+```
+
+## ДЗ * (Авто регистрация Runner)
+
+Есть несколько вариантов зарегистрировать раннер. Я сначал нашел ссылку https://gitlab.com/gitlab-org/gitlab-runner/issues/1802,
+ее и использую в примере. Можно еще через ENV задать https://gitlab.com/gitlab-org/gitlab-runner/blob/master/docs/commands/README.md
+т.е. как-то так. Вариант хорош для композа
+```bash
+export CI_SERVER_URL=http://gitlab.example.com
+export RUNNER_NAME=my-runner
+export REGISTRATION_TOKEN=my-registration-token
+export REGISTER_NON_INTERACTIVE=true
+gitlab-runner register
+```
+
+```bash
+docker run -d --name gitlab-runner-2 --restart always \
+-v /srv/gitlab-runner/config:/etc/gitlab-runner \
+-v /var/run/docker.sock:/var/run/docker.sock \
+gitlab/gitlab-runner:latest
+
+docker exec -it gitlab-runner-2 gitlab-runner register --non-interactive \
+ --description my-runner-2 \
+ --url http://35.205.71.166 \
+ --registration-token TVnFHoH \
+ --executor docker \
+ --docker-image alpine:latest \
+ --run-untagged \ 
+ --locked=false
+```
+
+Пример
+```bash
+$ docker exec -it gitlab-runner-2 gitlab-runner register --non-interactive \
+ --description my-runner-2 \
+ --url http://35.205.71.166 \
+ --registration-token TVnFHoHz \
+ --executor docker \
+ --docker-image alpine:latest \
+ --run-untagged \
+ --locked=false
+Running in system-mode.
+
+Registering runner... succeeded                     runner=TVnFHoHz
+Runner registered successfully. Feel free to start it, but if it's running already the config should be automatically reloaded!
+```
+
+Теперь два теста работают параллельно, только судя по всему это не будет работать, т.к. образ докер с шага build есть только
+на одном раннере. Надо делать как-то через артифакты... В общем непонятно пока, т.к. переодически получал ошибку, а иногда билд собирался..:
+```bash
+ERROR: Job failed (system failure): Error: No such container: dccd19b9b378b751df9c5e79383a2566a16aa044ce5ee4ae15893d9bd112bfb3
+```
+
+Теперь можно создать хоть 100, хоть 1000 ранеров:
+```bash
+for i in `seq 1 100`
+do
+  docker run -d --name gitlab-runner-${i} ...
+  docker exec -it gitlab-runner-${i} --description my-runner-${i} ...
+done
+
+```
+
+## ДЗ ** (Нотификация в слак)
+Нотификации идут в канал https://devops-team-otus.slack.com/messages/C8C9R4J1J/details/?
 
 # HW 17 Docker-4
 

@@ -1,2 +1,7 @@
 gh-md-toc
 reddit-microservices/.env
+terraform-gitlab/terraform.tfvars
+terraform-gitlab/*lock.info
+terraform-gitlab/*tfstate
+terraform-gitlab/*backup
+terraform-gitlab/.terraform

@@ -1,0 +1,3 @@
+project = "PROJECT"
+public_key_path = "PATH for ~/.ssh/appuser.pub"
+private_key_path = "PATH for ~/.ssh/appuser"
