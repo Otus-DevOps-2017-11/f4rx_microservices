@@ -27,6 +27,44 @@ Table of Contents
 
 Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 
+# HW 20 Docker-7
+
+Запускаем ВМ с Gitlab и узнаем что у нас изменился адрес
+```bash
+gcloud compute instances start gitlab
+
+$ terraform apply
+...
+gitlab_external_ip = 35.187.176.178
+
+docker-machine rm otus-gitlab
+docker-machine create --driver generic --generic-ip-address=$(terraform output gitlab_external_ip) --generic-ssh-user=subadm --generic-ssh-key ~/.ssh/appuser otus-gitlab
+docker-machine env otus-gitlab
+eval $(docker-machine env otus-gitlab)
+
+# Проверяем
+$ docker ps
+CONTAINER ID        IMAGE                         COMMAND                  CREATED             STATUS                             PORTS                                                            NAMES
+99cb6d9c4ee1        gitlab/gitlab-runner:latest   "/usr/bin/dumb-init …"   2 days ago          Up 23 seconds                                                                                       gitlab-runner-2
+7a7e35a1ed25        gitlab/gitlab-runner:latest   "/usr/bin/dumb-init …"   2 days ago          Up 23 seconds                                                                                       gitlab-runner
+62849345fb52        gitlab/gitlab-ce:latest       "/assets/wrapper"        3 days ago          Up 23 seconds (health: starting)   0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp, 0.0.0.0:2222->22/tcp   hw19_web_1
+```
+
+Из доки:
+```bash
+Add a host without a driver
+You can register an already existing docker host by passing the daemon url. With that, you can have the same workflow as on a host provisioned by docker-machine.
+
+$ docker-machine create --driver none --url=tcp://50.134.234.20:2376 custombox
+$ docker-machine ls
+NAME        ACTIVE   DRIVER    STATE     URL
+custombox   *        none      Running   tcp://50.134.234.20:2376
+```
+
+Меняем адрес в hw_19/docker-compose.yml. Пристреливаем текушие контейнеры (со вторым ранером), и перезапускаем через композ гитлаб
+
+
+
 # HW 19 Docker-6
 
 Развернуть хост
@@ -210,12 +248,11 @@ gitlab/gitlab-runner:latest
 
 docker exec -it gitlab-runner-2 gitlab-runner register --non-interactive \
  --description my-runner-2 \
- --url http://35.205.71.166 \
- --registration-token TVnFHoH \
+ --url http://${IP} \
+ --registration-token afCUy7ynZ8FooZmCpQq4 \
  --executor docker \
  --docker-image alpine:latest \
- --run-untagged \ 
- --locked=false
+ --run-untagged --locked=false
 ```
 
 Пример
