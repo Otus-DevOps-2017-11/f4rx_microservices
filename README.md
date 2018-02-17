@@ -98,6 +98,7 @@ ansible-playbook hw_20/create_instance.yaml --extra-vars="credentials_file=../Do
 
 ## ДЗ **
 
+Проверка динамического инвентори
 ```bash
 $ GCE_EMAIL=gitlab@docker-193517.iam.gserviceaccount.com GCE_PROJECT=docker-193517 GCE_CREDENTIALS_FILE_PATH=./Docker-72e3439b3339.json ansible -i ./hw_20/gce.py example2-test-vm -u appuser -m ping
 example2-test-vm | SUCCESS => {
@@ -106,8 +107,9 @@ example2-test-vm | SUCCESS => {
 }
 ```
 
+Так запускается плейбук по деплою приложения
 ```bash
-$ GCE_EMAIL=gitlab@docker-193517.iam.gserviceaccount.com GCE_PROJECT=docker-193517 GCE_CREDENTIALS_FILE_PATH=./Docker-72e3439b3339.json ansible-playbook -l example2-test-vm -i ./hw_20/gce.py hw_20/deploy_and_run_reddit_via_compose.yaml
+ANSIBLE_SSH_RETRIES=5 ANSIBLE_HOST_KEY_CHECKING=False GCE_EMAIL=gitlab@docker-193517.iam.gserviceaccount.com GCE_PROJECT=docker-193517 GCE_CREDENTIALS_FILE_PATH=./Docker-72e3439b3339.json ansible-playbook -l example2-"${CI_COMMIT_REF_NAME}" -i ./hw_20/gce.py hw_20/deploy_and_run_reddit_via_compose.yaml
 ```
 
 # HW 19 Docker-6
