@@ -26,7 +26,7 @@ create_vm_job:
     - ansible-playbook hw_20/create_instance.yaml --extra-vars="instance_name=${CI_COMMIT_REF_NAME} state=active"
   environment:
     name: manage_vm/$CI_COMMIT_REF_NAME
-    on_stop: stop_vm
+    on_stop: stop_vm_job
   only:
     - branches
   except:
