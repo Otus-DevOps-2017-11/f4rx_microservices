@@ -23,6 +23,8 @@ build_job:
 create_vm_job:
   stage: create_vm
   script:
+    - apt update && apt install -y python-pip
+    - pip install virtualenv
     - virtualenv -p python2.7 env
     - source env/bin/activate
     - pip install ansible apache-libcloud
@@ -40,6 +42,8 @@ stop_vm:
   stage: create_vm
   when: manual
   script:
+    - apt update && apt install -y python-pip
+    - pip install virtualenv
     - virtualenv -p python2.7 env
     - source env/bin/activate
     - pip install ansible apache-libcloud
