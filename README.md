@@ -75,6 +75,9 @@ https://docs.gitlab.com/ee/ci/ssh_keys/README.html
 
 https://docs.gitlab.com/ce/ci/environments.html#stopping-an-environment
 
+Навешивать теги на джобы, чтобы использовался executer с ssh. Т.е. все операции с вызовом Ansible вынести в какой-нибудь
+mgmt-контейнер. 
+
 Для тестирование playbook'a
 ```bash
 virtualenv -p python2.7 env
