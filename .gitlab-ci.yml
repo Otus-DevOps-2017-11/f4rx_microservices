@@ -12,8 +12,8 @@ variables:
   DATABASE_URL: 'mongodb://mongo/user_posts'
 
 before_script:
-  - cd reddit
-  - bundle install
+#  - cd reddit
+#  - bundle install
 
 build_job:
   stage: build
@@ -23,7 +23,7 @@ build_job:
 create_vm_job:
   stage: create_vm
   script:
-    - apt update && apt install -y python-pip
+    - apt update && apt install -y python-pip python-dev
     - pip install virtualenv
     - virtualenv -p python2.7 env
     - source env/bin/activate
@@ -42,7 +42,7 @@ stop_vm:
   stage: create_vm
   when: manual
   script:
-    - apt update && apt install -y python-pip
+    - apt update && apt install -y python-pip python-dev
     - pip install virtualenv
     - virtualenv -p python2.7 env
     - source env/bin/activate
