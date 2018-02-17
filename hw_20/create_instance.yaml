@@ -8,7 +8,7 @@
     credentials_file: ../Docker-72e3439b3339.json
     project_id: docker-193517
     zone: europe-west1-b
-    machine_type: n1-standard-1
+    machine_type: g1-small
     image: ubuntu
     instance_name: test-vm
     state: active
