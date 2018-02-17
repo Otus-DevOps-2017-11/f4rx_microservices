@@ -1,4 +1,4 @@
-- name: Create instance(s)
+- name: Manage the instance
   hosts: localhost
   connection: local
   gather_facts: no
@@ -17,11 +17,14 @@
 
    - name: Manage  instance
      gce:
-         instance_names: "{{ instance_name }}"
+         instance_names: "example2-{{ instance_name }}"
          machine_type: "{{ machine_type }}"
          image: "{{ image }}"
          service_account_email: "{{ service_account_email }}"
          credentials_file: "{{ credentials_file }}"
          project_id: "{{ project_id }}"
          zone: "{{ zone }}"
+         metadata: '{"sshKeys":"appuser:ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAB+wDIhMjsBXFuepcUXNQiqGJosR3RD6tfK5m6iT8lDU9rdYjYMHHpa3IxN7djETzT+JUlAD+w3hy1H1wqpkeZwAzIu/tNgh901gIIGtHkgWuQ8b9mzI5kTSlYtQ1bdLK28uMxOjt0KBOHP64pDYVzRD7GKNVTXPYefq70iBvEgkq4M1NcZlUmP32OwVZrliZrM8JsdnmmiurjP30NvrAQSoxB+UrEfodT4qgVcQzotp2HcYHy2FLkImlcHszs9ngyy64ldqJVIVfbxLBGQqhDeEWvhh5emVdzNGgCtVb2vuz5JXxENDZm9map/vt9gTl6sB/+IJRHLCdSVkRnWk1lS/6Pbfvdsl3AImJRCYGHYaq7pM2U3FNA4TTMY2vJAsjo8uhg098twUNj3MAkfHVUoaoPoNQDt7RLA59hbf00YmeumhZz73jBQGHiVH3jq2E79nYDkzWhr8Kne/TxDaUExsw8rKZpBjY8WE2K9sIhYLoEsPklJExxZDOeYBlFADhynbK2XEoD1vtYpfge7ITgcmUIh91/K341qkNfVnUDIoN5lV+SeYN28c/HJEKXGGPsog1/vCBWPC23z22K8Pe+WqBHba8jbG+OItlyBh00trQe9mEnB5XxSabPeDXJv3bfnh1lOT5V9X+Wjfx0SlD7v69XcWDWnMhIf2dzQw== appuser"}'
+         tags:
+           - reddit-app
          state: "{{ state }}"
