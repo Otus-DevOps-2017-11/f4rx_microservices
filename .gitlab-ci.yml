@@ -21,6 +21,8 @@ build_job:
     - echo 'Building'
 
 create_vm_job:
+  before_script:
+    - echo "skip before_script"
   image: f3ex/ansible-gcp:0.1
   stage: create_vm
   script:
@@ -36,6 +38,8 @@ create_vm_job:
     - master
 
 stop_vm:
+  before_script:
+    - echo "skip before_script"
   image: f3ex/ansible-gcp:0.1
   stage: create_vm
   when: manual
