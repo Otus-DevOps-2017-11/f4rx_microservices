@@ -58,6 +58,7 @@ build_job:
   script:
     - source /env/bin/activate
     - echo "${APPUSER_SSH_KEY}" |  base64 -d > appuser_ssh_key
+    - chmod 600 appuser_ssh_key
     - eval $(ssh-agent )
     - ssh-add appuser_ssh_key
     - echo "${GCP_CREDS_JSON}" | base64 -d > Docker-72e3439b3339.json
