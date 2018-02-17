@@ -10,14 +10,14 @@
     zone: europe-west1-b
     machine_type: n1-standard-1
     image: ubuntu
-    instance_names: test-vm
+    instance_name: test-vm
     state: active
 
   tasks:
 
-   - name: Launch instances
+   - name: Manage the instance
      gce:
-         instance_names: "{{ instance_names }}"
+         instance_name: "{{ instance_names }}"
          machine_type: "{{ machine_type }}"
          image: "{{ image }}"
          service_account_email: "{{ service_account_email }}"

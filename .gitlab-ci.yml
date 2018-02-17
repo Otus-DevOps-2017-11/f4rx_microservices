@@ -21,13 +21,10 @@ build_job:
     - echo 'Building'
 
 create_vm_job:
+  image: f3ex/ansible-gcp:0.1
   stage: create_vm
   script:
-    - apt update && apt install -y python-pip python-dev
-    - pip install virtualenv pycrypto
-    - virtualenv -p python2.7 env
-    - source env/bin/activate
-    - pip install ansible apache-libcloud
+    - source /env/bin/activate
     - echo "${GCP_CREDS_JSON}" | base64 -d > Docker-72e3439b3339.json
     - ansible-playbook hw_20/create_instance.yaml --extra-vars="credentials_file=../Docker-72e3439b3339.json state=active"
   environment:
@@ -39,14 +36,11 @@ create_vm_job:
     - master
 
 stop_vm:
+  image: f3ex/ansible-gcp:0.1
   stage: create_vm
   when: manual
   script:
-    - apt update && apt install -y python-pip python-dev
-    - pip install virtualenv pycrypto
-    - virtualenv -p python2.7 env
-    - source env/bin/activate
-    - pip install ansible apache-libcloud
+    - source /env/bin/activate
     - echo "${GCP_CREDS_JSON}" | base64 -d > Docker-72e3439b3339.json
     - ansible-playbook hw_20/create_instance.yaml --extra-vars="credentials_file=../Docker-72e3439b3339.json state=deleted"
   environment:
