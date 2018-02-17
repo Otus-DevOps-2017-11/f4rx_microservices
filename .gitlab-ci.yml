@@ -18,7 +18,7 @@ before_script:
 create_vm_job:
   before_script:
     - echo "skip before_script"
-  image: f3ex/ansible-gcp:0.1
+  image: f3ex/ansible-gcp:0.2
   stage: create_vm
   script:
     - source /env/bin/activate
@@ -35,7 +35,7 @@ create_vm_job:
 stop_vm_job:
   before_script:
     - echo "skip before_script"
-  image: f3ex/ansible-gcp:0.1
+  image: f3ex/ansible-gcp:0.2
   stage: create_vm
   when: manual
   script:
@@ -53,7 +53,7 @@ stop_vm_job:
 build_job:
   before_script:
     - echo "skip before_script"
-  image: f3ex/ansible-gcp:0.1
+  image: f3ex/ansible-gcp:0.2
   stage: build
   script:
     - source /env/bin/activate
