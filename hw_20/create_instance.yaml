@@ -1,0 +1,27 @@
+- name: Create instance(s)
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    service_account_email: gitlab@docker-193517.iam.gserviceaccount.com
+    credentials_file: ../Docker-72e3439b3339.json
+    project_id: docker-193517
+    zone: europe-west1-b
+    machine_type: n1-standard-1
+    image: ubuntu
+    instance_names: test-vm
+    state: active
+
+  tasks:
+
+   - name: Launch instances
+     gce:
+         instance_names: "{{ instance_names }}"
+         machine_type: "{{ machine_type }}"
+         image: "{{ image }}"
+         service_account_email: "{{ service_account_email }}"
+         credentials_file: "{{ credentials_file }}"
+         project_id: "{{ project_id }}"
+         zone: "{{ zone }}"
+         state: "{{ state }}"

@@ -29,6 +29,8 @@ Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 
 # HW 20 Docker-7
 
+## Основное задание
+
 Запускаем ВМ с Gitlab и узнаем что у нас изменился адрес
 ```bash
 gcloud compute instances start gitlab
@@ -64,8 +66,38 @@ custombox   *        none      Running   tcp://50.134.234.20:2376
 Меняем адрес в hw_19/docker-compose.yml. Пристреливаем текушие контейнеры (со вторым ранером), и перезапускаем через композ гитлаб
 
 
+## ДЗ * (Авторазварачивание environment)
+
+http://docs.ansible.com/ansible/latest/guide_gce.html
+http://docs.ansible.com/ansible/latest/gce_module.html
+
+https://docs.gitlab.com/ee/ci/ssh_keys/README.html
+
+https://docs.gitlab.com/ce/ci/environments.html#stopping-an-environment
+
+Для тестирование playbook'a
+```bash
+virtualenv -p python2.7 env
+source env/bin/activate
+pip install ansible apache-libcloud
+
+base64 -i Docker-72e3439b3339.json
+```
+
+Docker-72e3439b3339.json в формате base64 добавлен в секретные переменные в Gitlab CI
+
+Создать и удалить ВМ из плейбука:
+```bash
+ansible-playbook hw_20/create_instance.yaml --extra-vars="credentials_file=../Docker-72e3439b3339.json state=active"
+
+ansible-playbook hw_20/create_instance.yaml --extra-vars="credentials_file=../Docker-72e3439b3339.json state=deleted"
+```
+
+
 
 # HW 19 Docker-6
+
+## Основное задание
 
 Развернуть хост
 
