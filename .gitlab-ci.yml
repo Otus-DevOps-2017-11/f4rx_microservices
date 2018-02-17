@@ -26,9 +26,9 @@ create_vm_job:
   script:
     - source /env/bin/activate
     - echo "${GCP_CREDS_JSON}" | base64 -d > Docker-72e3439b3339.json
-    - ansible-playbook hw_20/create_instance.yaml --extra-vars="credentials_file=../Docker-72e3439b3339.json state=active"
+    - ansible-playbook hw_20/create_instance.yaml --extra-vars="instance_name=${CI_COMMIT_REF_NAME} state=active"
   environment:
-    name: vm/$CI_COMMIT_REF_NAME
+    name: manage_vm/$CI_COMMIT_REF_NAME
     on_stop: stop_vm
   only:
     - branches
@@ -42,9 +42,9 @@ stop_vm:
   script:
     - source /env/bin/activate
     - echo "${GCP_CREDS_JSON}" | base64 -d > Docker-72e3439b3339.json
-    - ansible-playbook hw_20/create_instance.yaml --extra-vars="credentials_file=../Docker-72e3439b3339.json state=deleted"
+    - ansible-playbook hw_20/create_instance.yaml --extra-vars="instance_name=${CI_COMMIT_REF_NAME} state=deleted"
   environment:
-    name: vm/$CI_COMMIT_REF_NAME
+    name: manage_vm/$CI_COMMIT_REF_NAME
     action: stop
   only:
     - branches
