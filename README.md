@@ -98,6 +98,11 @@ ansible-playbook hw_20/create_instance.yaml --extra-vars="credentials_file=../Do
 
 ## ДЗ **
 
+https://gitlab.com/gitlab-org/omnibus-gitlab/issues/1312
+
+Тут надо отметить, что сама лаба с примером не идеальная, нет как такового диплоя, мы не используем артифакты с предыдущих шагов,
+bundle install запускаем вообще на каждом шаге.
+
 Проверка динамического инвентори
 ```bash
 $ GCE_EMAIL=gitlab@docker-193517.iam.gserviceaccount.com GCE_PROJECT=docker-193517 GCE_CREDENTIALS_FILE_PATH=./Docker-72e3439b3339.json ansible -i ./hw_20/gce.py example2-test-vm -u appuser -m ping
