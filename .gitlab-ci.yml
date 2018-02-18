@@ -58,9 +58,12 @@ build_job:
   tags:
     - docker-build
   script:
+#docker build -t 35.187.176.178:4567/homework/example2/reddit-ui:01 reddit-microservices/ui/
+#docker push 35.187.176.178:4567/homework/example2/reddit-ui:01
+  
     - docker login -u gitlab-ci-token -p $GITLAB_CI_TOKEN http://35.187.176.178:4567
-    - docker build -t reddit/ui reddit-microservices/ui/ 
-    - docker push reddit/ui 35.187.176.178:4567/homework/example2
+    - docker build -t 35.187.176.178:4567/homework/example2/reddit-ui:01 reddit-microservices/ui/
+    - docker push 35.187.176.178:4567/homework/example2/reddit-ui:01
 
 ####################
 #build_job:
