@@ -5,8 +5,12 @@
 
   vars:
     regestry_login: gitlab-ci-token
-    regestry_password: без_пароля
+    regestry_password: 3FiXRfzFnzARa7waPszN
     branch: master
+
+  handlers:
+    - name: restart docker
+      service: name=docker state=restarted
 
   tasks:
 
@@ -35,6 +39,7 @@
       shell: docker-compose -v | awk '{print $3}'
       register: docker_compose_version
 
+    # Из репозитория почему-то ставится 1.8
     - name: Download docker-compose
       become: yes
       get_url:
@@ -46,22 +51,36 @@
 
     - name: Deploy reddit-microservices
       synchronize:
-        src: ../reddit-microservices
+        src: ../hw_20/docker-compose.yaml
         dest: ~/
+#
+    - name: setup  insecure-registries
+      become: yes
+      copy:
+        src: daemon.json
+        dest: /etc/docker/daemon.json
+      notify:
+        - restart docker
 
-    - copy: content="{\"insecure-registries\" : [\"35.187.176.178:4567\"]}" dest=/etc/docker/daemon.json
+#    - name: restart dockerd
+#      become: yes
+#      command: systemctl restart docker
 
-    - name: restart dockerd
-      command: systemctl restart dockerd
+    # Error: Cannot perform an interactive login from a non TTY device
+#    - name: Add regestry
+#      become: yes
+#      raw: docker login -u "{{regestry_login}}" -p "{{regestry_password}}"
 
-    - name: Set .env file
-      command: mv ~/reddit-microservices/.env.example ~/reddit-microservices/.env
+    - name: Log into private registry and force re-authorization
+      become: yes
+      docker_login:
+        registry: http://35.187.176.178:4567
+        username: "{{regestry_login}}"
+        password: "{{regestry_password}}"
 
-    - name: Add regestry
-      command: sudo docker login -u "{{regestry_login}}" -p "{{regestry_password}}" http://35.187.176.178:4567
-
-    - copy: content="BRANCH={{ branch }}" dest=~/hw_20
+    - copy: content="BRANCH={{ branch }}" dest=~/.env
 
     - name: Start app
-      shell: cd ~/hw_20 && sudo docker-compose down && sudo docker-compose up -d
+      shell: cd ~/ && sudo -H docker-compose down && sudo -H docker-compose up -d
+
 
