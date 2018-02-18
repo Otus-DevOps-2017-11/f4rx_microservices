@@ -49,6 +49,11 @@
         src: ../reddit-microservices
         dest: ~/
 
+    - copy: content="{\"insecure-registries\" : [\"35.187.176.178:4567\"]}" dest=/etc/docker/daemon.json
+
+    - name: restart dockerd
+      command: systemctl restart dockerd
+
     - name: Set .env file
       command: mv ~/reddit-microservices/.env.example ~/reddit-microservices/.env
 

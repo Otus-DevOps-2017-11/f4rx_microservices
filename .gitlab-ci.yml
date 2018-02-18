@@ -1,8 +1,8 @@
 image: ruby:2.4.2
 
 stages:
-  - create_vm
-  - build
+#  - create_vm
+#  - build
   - deploy_except_master_branch
 #  - test
 #  - review
@@ -16,59 +16,59 @@ before_script:
   - cd reddit
   - bundle install
 
-create_vm_job:
-  before_script:
-    - echo "skip before_script"
-  image: f3ex/ansible-gcp:0.2
-  stage: create_vm
-  script:
-    - source /env/bin/activate
-    - echo "${GCP_CREDS_JSON}" | base64 -d > Docker-72e3439b3339.json
-    - ansible-playbook hw_20/create_instance.yaml --extra-vars="instance_name=${CI_COMMIT_REF_NAME} state=active"
-  environment:
-    name: manage_vm/$CI_COMMIT_REF_NAME
-    on_stop: stop_vm_job
-  only:
-    - branches
-  except:
-    - master
-
-stop_vm_job:
-  before_script:
-    - echo "skip before_script"
-  image: f3ex/ansible-gcp:0.2
-  stage: create_vm
-  when: manual
-  script:
-    - source /env/bin/activate
-    - echo "${GCP_CREDS_JSON}" | base64 -d > Docker-72e3439b3339.json
-    - ansible-playbook hw_20/create_instance.yaml --extra-vars="instance_name=${CI_COMMIT_REF_NAME} state=deleted"
-  environment:
-    name: manage_vm/$CI_COMMIT_REF_NAME
-    action: stop
-  only:
-    - branches
-  except:
-    - master
-
-build_job:
-  before_script:
-    - echo "skip before_script"
-  stage: build
-  image: docker
-  tags:
-    - docker-build
-  script:
-#docker build -t 35.187.176.178:4567/homework/example2/reddit-ui:01 reddit-microservices/ui/
-#docker push 35.187.176.178:4567/homework/example2/reddit-ui:01
-
-    - docker login -u gitlab-ci-token -p $GITLAB_CI_TOKEN http://35.187.176.178:4567
-    - docker build -t 35.187.176.178:4567/homework/example2/reddit-ui:$CI_COMMIT_REF_NAME reddit-microservices/ui/
-    - docker push 35.187.176.178:4567/homework/example2/reddit-ui:$CI_COMMIT_REF_NAME
-    - docker build -t 35.187.176.178:4567/homework/example2/comment:$CI_COMMIT_REF_NAME reddit-microservices/ui/
-    - docker push 35.187.176.178:4567/homework/example2/comment:$CI_COMMIT_REF_NAME
-    - docker build -t 35.187.176.178:4567/homework/example2/post-py:$CI_COMMIT_REF_NAME reddit-microservices/ui/
-    - docker push 35.187.176.178:4567/homework/example2/post-py:$CI_COMMIT_REF_NAME
+#create_vm_job:
+#  before_script:
+#    - echo "skip before_script"
+#  image: f3ex/ansible-gcp:0.2
+#  stage: create_vm
+#  script:
+#    - source /env/bin/activate
+#    - echo "${GCP_CREDS_JSON}" | base64 -d > Docker-72e3439b3339.json
+#    - ansible-playbook hw_20/create_instance.yaml --extra-vars="instance_name=${CI_COMMIT_REF_NAME} state=active"
+#  environment:
+#    name: manage_vm/$CI_COMMIT_REF_NAME
+#    on_stop: stop_vm_job
+#  only:
+#    - branches
+#  except:
+#    - master
+#
+#stop_vm_job:
+#  before_script:
+#    - echo "skip before_script"
+#  image: f3ex/ansible-gcp:0.2
+#  stage: create_vm
+#  when: manual
+#  script:
+#    - source /env/bin/activate
+#    - echo "${GCP_CREDS_JSON}" | base64 -d > Docker-72e3439b3339.json
+#    - ansible-playbook hw_20/create_instance.yaml --extra-vars="instance_name=${CI_COMMIT_REF_NAME} state=deleted"
+#  environment:
+#    name: manage_vm/$CI_COMMIT_REF_NAME
+#    action: stop
+#  only:
+#    - branches
+#  except:
+#    - master
+#
+#build_job:
+#  before_script:
+#    - echo "skip before_script"
+#  stage: build
+#  image: docker
+#  tags:
+#    - docker-build
+#  script:
+##docker build -t 35.187.176.178:4567/homework/example2/reddit-ui:01 reddit-microservices/ui/
+##docker push 35.187.176.178:4567/homework/example2/reddit-ui:01
+#
+#    - docker login -u gitlab-ci-token -p $GITLAB_CI_TOKEN http://35.187.176.178:4567
+#    - docker build -t 35.187.176.178:4567/homework/example2/reddit-ui:$CI_COMMIT_REF_NAME reddit-microservices/ui/
+#    - docker push 35.187.176.178:4567/homework/example2/reddit-ui:$CI_COMMIT_REF_NAME
+#    - docker build -t 35.187.176.178:4567/homework/example2/comment:$CI_COMMIT_REF_NAME reddit-microservices/ui/
+#    - docker push 35.187.176.178:4567/homework/example2/comment:$CI_COMMIT_REF_NAME
+#    - docker build -t 35.187.176.178:4567/homework/example2/post-py:$CI_COMMIT_REF_NAME reddit-microservices/ui/
+#    - docker push 35.187.176.178:4567/homework/example2/post-py:$CI_COMMIT_REF_NAME
 
 ###################
 deploy_except_master_branch_job:
