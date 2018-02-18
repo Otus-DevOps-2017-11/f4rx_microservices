@@ -54,7 +54,7 @@ build_job:
   before_script:
     - echo "skip before_script"
   stage: build
-  image: docker
+  image: docker:dind
   tags:
     - docker-build
   script:
