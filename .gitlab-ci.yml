@@ -2,7 +2,7 @@ image: ruby:2.4.2
 
 stages:
 #  - create_vm
-#  - build
+  - build
   - deploy_except_master_branch
 #  - test
 #  - review
