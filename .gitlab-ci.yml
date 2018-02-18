@@ -58,9 +58,16 @@ build_job:
   tags:
     - docker-build
   script:
-    - docker login -u gitlab-ci-token -p $GITLAB_CI_TOKEN
-    - docker build -t reddit/ui reddit-microservices/ui/ http://35.187.176.178:4567
-    - docker push reddit/ui
+#docker build -t 35.187.176.178:4567/homework/example2/reddit-ui:01 reddit-microservices/ui/
+#docker push 35.187.176.178:4567/homework/example2/reddit-ui:01
+
+    - docker login -u gitlab-ci-token -p $GITLAB_CI_TOKEN http://35.187.176.178:4567
+    - docker build -t 35.187.176.178:4567/homework/example2/reddit-ui:$CI_COMMIT_REF_NAME reddit-microservices/ui/
+    - docker push 35.187.176.178:4567/homework/example2/reddit-ui:$CI_COMMIT_REF_NAME
+    - docker build -t 35.187.176.178:4567/homework/example2/comment:$CI_COMMIT_REF_NAME reddit-microservices/ui/
+    - docker push 35.187.176.178:4567/homework/example2/comment:$CI_COMMIT_REF_NAME
+    - docker build -t 35.187.176.178:4567/homework/example2/post-py:$CI_COMMIT_REF_NAME reddit-microservices/ui/
+    - docker push 35.187.176.178:4567/homework/example2/post-py:$CI_COMMIT_REF_NAME
 
 ####################
 #build_job:
