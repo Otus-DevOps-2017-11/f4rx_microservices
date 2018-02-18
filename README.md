@@ -117,6 +117,15 @@ example2-test-vm | SUCCESS => {
 ANSIBLE_SSH_RETRIES=5 ANSIBLE_HOST_KEY_CHECKING=False GCE_EMAIL=gitlab@docker-193517.iam.gserviceaccount.com GCE_PROJECT=docker-193517 GCE_CREDENTIALS_FILE_PATH=./Docker-72e3439b3339.json ansible-playbook -l example2-"${CI_COMMIT_REF_NAME}" -i ./hw_20/gce.py hw_20/deploy_and_run_reddit_via_compose.yaml
 ```
 
+```bash
+root@gitlab:~# cat /etc/docker/daemon.json
+{
+  "insecure-registries" : ["35.187.176.178:4567"]
+}
+
+systemctl restart dockerd
+```
+
 # HW 19 Docker-6
 
 ## Основное задание

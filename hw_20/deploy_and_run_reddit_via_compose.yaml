@@ -53,7 +53,7 @@
       command: mv ~/reddit-microservices/.env.example ~/reddit-microservices/.env
 
     - name: Add regestry
-      command: docker login -u "{{regestry_login}}" -p "{{regestry_password}}" http://35.187.176.178:4567
+      command: sudo docker login -u "{{regestry_login}}" -p "{{regestry_password}}" http://35.187.176.178:4567
 
     - copy: content="BRANCH={{ branch }}" dest=~/hw_20
 
