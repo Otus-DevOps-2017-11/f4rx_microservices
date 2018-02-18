@@ -1,8 +1,9 @@
 image: ruby:2.4.2
 
 stages:
-#  - create_vm
+  - create_vm
   - build
+  - deploy_except_master_branch
 #  - test
 #  - review
 #  - stage
@@ -15,40 +16,40 @@ before_script:
   - cd reddit
   - bundle install
 
-#create_vm_job:
-#  before_script:
-#    - echo "skip before_script"
-#  image: f3ex/ansible-gcp:0.2
-#  stage: create_vm
-#  script:
-#    - source /env/bin/activate
-#    - echo "${GCP_CREDS_JSON}" | base64 -d > Docker-72e3439b3339.json
-#    - ansible-playbook hw_20/create_instance.yaml --extra-vars="instance_name=${CI_COMMIT_REF_NAME} state=active"
-#  environment:
-#    name: manage_vm/$CI_COMMIT_REF_NAME
-#    on_stop: stop_vm_job
-#  only:
-#    - branches
-#  except:
-#    - master
-#
-#stop_vm_job:
-#  before_script:
-#    - echo "skip before_script"
-#  image: f3ex/ansible-gcp:0.2
-#  stage: create_vm
-#  when: manual
-#  script:
-#    - source /env/bin/activate
-#    - echo "${GCP_CREDS_JSON}" | base64 -d > Docker-72e3439b3339.json
-#    - ansible-playbook hw_20/create_instance.yaml --extra-vars="instance_name=${CI_COMMIT_REF_NAME} state=deleted"
-#  environment:
-#    name: manage_vm/$CI_COMMIT_REF_NAME
-#    action: stop
-#  only:
-#    - branches
-#  except:
-#    - master
+create_vm_job:
+  before_script:
+    - echo "skip before_script"
+  image: f3ex/ansible-gcp:0.2
+  stage: create_vm
+  script:
+    - source /env/bin/activate
+    - echo "${GCP_CREDS_JSON}" | base64 -d > Docker-72e3439b3339.json
+    - ansible-playbook hw_20/create_instance.yaml --extra-vars="instance_name=${CI_COMMIT_REF_NAME} state=active"
+  environment:
+    name: manage_vm/$CI_COMMIT_REF_NAME
+    on_stop: stop_vm_job
+  only:
+    - branches
+  except:
+    - master
+
+stop_vm_job:
+  before_script:
+    - echo "skip before_script"
+  image: f3ex/ansible-gcp:0.2
+  stage: create_vm
+  when: manual
+  script:
+    - source /env/bin/activate
+    - echo "${GCP_CREDS_JSON}" | base64 -d > Docker-72e3439b3339.json
+    - ansible-playbook hw_20/create_instance.yaml --extra-vars="instance_name=${CI_COMMIT_REF_NAME} state=deleted"
+  environment:
+    name: manage_vm/$CI_COMMIT_REF_NAME
+    action: stop
+  only:
+    - branches
+  except:
+    - master
 
 build_job:
   before_script:
@@ -69,27 +70,32 @@ build_job:
     - docker build -t 35.187.176.178:4567/homework/example2/post-py:$CI_COMMIT_REF_NAME reddit-microservices/ui/
     - docker push 35.187.176.178:4567/homework/example2/post-py:$CI_COMMIT_REF_NAME
 
-####################
-#build_job:
-#  before_script:
-#    - echo "skip before_script"
-#  image: f3ex/ansible-gcp:0.2
-#  stage: build
-#  script:
-#    - source /env/bin/activate
-#    - echo "${APPUSER_SSH_KEY}" |  base64 -d > appuser_ssh_key
-#    - chmod 600 appuser_ssh_key
-#    - eval $(ssh-agent )
-#    - ssh-add appuser_ssh_key
-#    - echo "${GCP_CREDS_JSON}" | base64 -d > Docker-72e3439b3339.json
-#    - ANSIBLE_SSH_RETRIES=5 ANSIBLE_HOST_KEY_CHECKING=False GCE_EMAIL=gitlab@docker-193517.iam.gserviceaccount.com GCE_PROJECT=docker-193517 GCE_CREDENTIALS_FILE_PATH=./Docker-72e3439b3339.json ansible-playbook -l example2-"${CI_COMMIT_REF_NAME}" -i ./hw_20/gce.py hw_20/deploy_and_run_reddit_via_compose.yaml
-#  environment:
-#    name: manage_vm/$CI_COMMIT_REF_NAME
-#  only:
-#    - branches
-#  except:
-#    - master
-#####
+###################
+deploy_except_master_branch_job:
+  before_script:
+    - echo "skip before_script"
+  image: f3ex/ansible-gcp:0.2
+  stage: deploy_except_master_branch
+  script:
+    - source /env/bin/activate
+    - echo "${APPUSER_SSH_KEY}" |  base64 -d > appuser_ssh_key
+    - chmod 600 appuser_ssh_key
+    - eval $(ssh-agent )
+    - ssh-add appuser_ssh_key
+    - echo "${GCP_CREDS_JSON}" | base64 -d > Docker-72e3439b3339.json
+    - >
+      ANSIBLE_SSH_RETRIES=5 ANSIBLE_HOST_KEY_CHECKING=False GCE_EMAIL=gitlab@docker-193517.iam.gserviceaccount.com
+      GCE_PROJECT=docker-193517 GCE_CREDENTIALS_FILE_PATH=./Docker-72e3439b3339.json
+      ansible-playbook -l example2-"${CI_COMMIT_REF_NAME}"
+      --extra-vars="regestry_login=gitlab-ci-token regestry_password=${$GITLAB_CI_TOKEN} branch=${CI_COMMIT_REF_NAME}"
+      -i ./hw_20/gce.py hw_20/deploy_and_run_reddit_via_compose.yaml
+  environment:
+    name: manage_vm/$CI_COMMIT_REF_NAME
+  only:
+    - branches
+  except:
+    - master
+####
 
 #test_unit_job:
 #  stage: test

@@ -3,6 +3,11 @@
   gather_facts: no
   remote_user: appuser
 
+  vars:
+    regestry_login: gitlab-ci-token
+    regestry_password: без_пароля
+    branch: master
+
   tasks:
 
     - name: Add docker key
@@ -47,6 +52,11 @@
     - name: Set .env file
       command: mv ~/reddit-microservices/.env.example ~/reddit-microservices/.env
 
+    - name: Add regestry
+      commad: docker login -u {{regestry_login}} -p {{regestry_password}} http://35.187.176.178:4567
+
+    - copy: content="BRANCH={{ branch }}" dest=~/hw_20
+
     - name: Start app
-      shell: cd ~/reddit-microservices && sudo docker-compose down && sudo docker-compose up -d
+      shell: cd ~/hw_20 && sudo docker-compose down && sudo docker-compose up -d
 
