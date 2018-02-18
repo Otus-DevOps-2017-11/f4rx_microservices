@@ -8,10 +8,10 @@
     regestry_password: 3FiXRfzFnzARa7waPszN
     branch: master
 
-  handlers:
-    - name: restart docker
-      become: yes
-      service: name=docker state=restarted
+#  handlers:
+#    - name: restart docker
+#      become: yes
+#      service: name=docker state=restarted
 
   tasks:
 
@@ -54,18 +54,20 @@
       synchronize:
         src: ../hw_20/docker-compose.yaml
         dest: ~/
-#
-    - name: setup  insecure-registries
+
+    - name: setup insecure-registries
       become: yes
       copy:
         src: daemon.json
         dest: /etc/docker/daemon.json
-      notify:
-        - restart docker
+#      notify:
+#        - restart docker
 
-#    - name: restart dockerd
-#      become: yes
-#      command: systemctl restart docker
+    # Перезагрузка сервиса так не сработает, т.к. сервис перезагружится только в конце плейбука, надо как-то разбивать их
+
+    - name: restart dockerd
+      become: yes
+      command: systemctl restart docker
 
     # Error: Cannot perform an interactive login from a non TTY device
 #    - name: Add regestry
