@@ -11,9 +11,7 @@ stages:
 variables:
   DATABASE_URL: 'mongodb://mongo/user_posts'
 
-before_script:
-  - cd reddit
-  - bundle install
+
 
 #create_vm_job:
 #  before_script:
@@ -54,12 +52,12 @@ build_job:
   before_script:
     - echo "skip before_script"
   stage: build
-  image: docker:dind
+  image: docker
   tags:
     - docker-build
   script:
-    - docker build -t reddit/ui reddit-microservices/ui/
     - docker login -u gitlab-ci-token -p $GITLAB_CI_TOKEN
+    - docker build -t reddit/ui reddit-microservices/ui/ http://35.187.176.178:4567
     - docker push reddit/ui
 
 ####################
