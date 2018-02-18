@@ -1,13 +1,13 @@
 image: ruby:2.4.2
 
 stages:
-#  - create_vm
+  - create_vm
   - build
   - deploy_except_master_branch
-#  - test
-#  - review
-#  - stage
-#  - production
+  - test
+  - review
+  - stage
+  - production
 
 variables:
   DATABASE_URL: 'mongodb://mongo/user_posts'
@@ -16,41 +16,41 @@ before_script:
   - cd reddit
   - bundle install
 
-#create_vm_job:
-#  before_script:
-#    - echo "skip before_script"
-#  image: f3ex/ansible-gcp:0.2
-#  stage: create_vm
-#  script:
-#    - source /env/bin/activate
-#    - echo "${GCP_CREDS_JSON}" | base64 -d > Docker-72e3439b3339.json
-#    - ansible-playbook hw_20/create_instance.yaml --extra-vars="instance_name=${CI_COMMIT_REF_NAME} state=active"
-#  environment:
-#    name: manage_vm/$CI_COMMIT_REF_NAME
-#    on_stop: stop_vm_job
-#  only:
-#    - branches
-#  except:
-#    - master
-#
-#stop_vm_job:
-#  before_script:
-#    - echo "skip before_script"
-#  image: f3ex/ansible-gcp:0.2
-#  stage: create_vm
-#  when: manual
-#  script:
-#    - source /env/bin/activate
-#    - echo "${GCP_CREDS_JSON}" | base64 -d > Docker-72e3439b3339.json
-#    - ansible-playbook hw_20/create_instance.yaml --extra-vars="instance_name=${CI_COMMIT_REF_NAME} state=deleted"
-#  environment:
-#    name: manage_vm/$CI_COMMIT_REF_NAME
-#    action: stop
-#  only:
-#    - branches
-#  except:
-#    - master
-#
+create_vm_job:
+  before_script:
+    - echo "skip before_script"
+  image: f3ex/ansible-gcp:0.2
+  stage: create_vm
+  script:
+    - source /env/bin/activate
+    - echo "${GCP_CREDS_JSON}" | base64 -d > Docker-72e3439b3339.json
+    - ansible-playbook hw_20/create_instance.yaml --extra-vars="instance_name=${CI_COMMIT_REF_NAME} state=active"
+  environment:
+    name: manage_vm/$CI_COMMIT_REF_NAME
+    on_stop: stop_vm_job
+  only:
+    - branches
+  except:
+    - master
+
+stop_vm_job:
+  before_script:
+    - echo "skip before_script"
+  image: f3ex/ansible-gcp:0.2
+  stage: create_vm
+  when: manual
+  script:
+    - source /env/bin/activate
+    - echo "${GCP_CREDS_JSON}" | base64 -d > Docker-72e3439b3339.json
+    - ansible-playbook hw_20/create_instance.yaml --extra-vars="instance_name=${CI_COMMIT_REF_NAME} state=deleted"
+  environment:
+    name: manage_vm/$CI_COMMIT_REF_NAME
+    action: stop
+  only:
+    - branches
+  except:
+    - master
+
 build_job:
   before_script:
     - echo "skip before_script"
@@ -67,6 +67,7 @@ build_job:
     - docker push 35.187.176.178:4567/homework/example2/reddit-ui:$CI_COMMIT_REF_NAME
     - docker build -t 35.187.176.178:4567/homework/example2/comment:$CI_COMMIT_REF_NAME reddit-microservices/comment/
     - docker push 35.187.176.178:4567/homework/example2/comment:$CI_COMMIT_REF_NAME
+
     - docker build -t 35.187.176.178:4567/homework/example2/post-py:$CI_COMMIT_REF_NAME reddit-microservices/post-py/
     - docker push 35.187.176.178:4567/homework/example2/post-py:$CI_COMMIT_REF_NAME
 
@@ -97,55 +98,55 @@ deploy_except_master_branch_job:
     - master
 ####
 
-#test_unit_job:
-#  stage: test
-#  services:
-#    - mongo:latest
-#  script:
-#    - ruby simpletest.rb
-#
-#test_integration_job:
-#  stage: test
-#  script:
-#    - echo 'Testing 2'
-#
-#deploy_dev_job:
-#  stage: review
-#  script:
-#    - echo 'Deploy'
-#  environment:
-#    name: dev
-#    url: http://dev.example.com
-#
-#branch review:
-#  stage: review
-#  script: echo "Deploy to $CI_ENVIRONMENT_SLUG"
-#  environment:
-#    name: branch/$CI_COMMIT_REF_NAME
-#    url: http://$CI_ENVIRONMENT_SLUG.example.com
-#  only:
-#    - branches
-#  except:
-#    - master
-#
-#staging:
-#  stage: stage
-#  when: manual
-#  only:
-#    - /^\d+\.\d+.\d+/
-#  script:
-#    - echo 'Deploy'
-#  environment:
-#    name: stage
-#    url: https://beta.example.com
-#
-#production:
-#  stage: production
-#  when: manual
-#  only:
-#    - /^\d+\.\d+.\d+/
-#  script:
-#    - echo 'Deploy'
-#  environment:
-#    name: production
-#    url: https://example.com
+test_unit_job:
+  stage: test
+  services:
+    - mongo:latest
+  script:
+    - ruby simpletest.rb
+
+test_integration_job:
+  stage: test
+  script:
+    - echo 'Testing 2'
+
+deploy_dev_job:
+  stage: review
+  script:
+    - echo 'Deploy'
+  environment:
+    name: dev
+    url: http://dev.example.com
+
+branch review:
+  stage: review
+  script: echo "Deploy to $CI_ENVIRONMENT_SLUG"
+  environment:
+    name: branch/$CI_COMMIT_REF_NAME
+    url: http://$CI_ENVIRONMENT_SLUG.example.com
+  only:
+    - branches
+  except:
+    - master
+
+staging:
+  stage: stage
+  when: manual
+  only:
+    - /^\d+\.\d+.\d+/
+  script:
+    - echo 'Deploy'
+  environment:
+    name: stage
+    url: https://beta.example.com
+
+production:
+  stage: production
+  when: manual
+  only:
+    - /^\d+\.\d+.\d+/
+  script:
+    - echo 'Deploy'
+  environment:
+    name: production
+    url: https://example.com

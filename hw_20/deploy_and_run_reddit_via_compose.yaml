@@ -81,6 +81,6 @@
     - copy: content="BRANCH={{ branch }}" dest=~/.env
 
     - name: Start app
-      shell: cd ~/ && sudo -H docker-compose down && sudo -H docker-compose up -d
+      shell: cd ~/ && sudo -H docker-compose pull --parallel && sudo -H docker-compose down && sudo -H docker-compose up -d
 
 
