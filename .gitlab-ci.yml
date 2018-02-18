@@ -11,7 +11,9 @@ stages:
 variables:
   DATABASE_URL: 'mongodb://mongo/user_posts'
 
-
+before_script:
+  - cd reddit
+  - bundle install
 
 #create_vm_job:
 #  before_script:
