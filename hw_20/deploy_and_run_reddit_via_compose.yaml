@@ -5,7 +5,7 @@
 
   vars:
     regestry_login: gitlab-ci-token
-    regestry_password: 3FiXRfzFnzARa7waPszN
+    regestry_password: PASSWORD
     branch: master
 
 #  handlers:
@@ -63,7 +63,7 @@
 #      notify:
 #        - restart docker
 
-    # Перезагрузка сервиса так не сработает, т.к. сервис перезагружится только в конце плейбука, надо как-то разбивать их
+    # Перезагрузка сервиса так не сработает, т.к. сервис перезагружится только в конце плейбука, надо их разбивать
 
     - name: restart dockerd
       become: yes

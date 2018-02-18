@@ -65,43 +65,87 @@ custombox   *        none      Running   tcp://50.134.234.20:2376
 
 Меняем адрес в hw_19/docker-compose.yml. Пристреливаем текушие контейнеры (со вторым ранером), и перезапускаем через композ гитлаб
 
+Основное задание выполнено по методичке, пайплайны построены.
+
+![Pipeline](images/hw20_pipeline.png?raw=true "Pipeline")
+![Environment](images/hw20_envinment.png?raw=true "Pipeline")
 
 ## ДЗ * (Авторазварачивание environment)
 
-http://docs.ansible.com/ansible/latest/guide_gce.html
-http://docs.ansible.com/ansible/latest/gce_module.html
+>При пуше новой ветки должен создаваться сервер
+для окружения с возможностью удалить его
+кнопкой. 
 
-https://docs.gitlab.com/ee/ci/ssh_keys/README.html
+Я пошел по пути создание ansible-плейбука hw_20/create_instance.yaml, в нем дергается модуль gce, который умеет создавать
+и удалять VM (через state), так же аргументом принемает имя вети, используя ветку создает ВМ ProjectName-BranchName, в данном случае
+`example2-docker-7`
 
-https://docs.gitlab.com/ce/ci/environments.html#stopping-an-environment
-
-Навешивать теги на джобы, чтобы использовался executer с ssh. Т.е. все операции с вызовом Ansible вынести в какой-нибудь
-mgmt-контейнер. 
-
-Для тестирование playbook'a
+Пример 
 ```bash
-virtualenv -p python2.7 env
-source env/bin/activate
-pip install ansible apache-libcloud
-
-base64 -i Docker-72e3439b3339.json
+ansible-playbook hw_20/create_instance.yaml --extra-vars="instance_name=${CI_COMMIT_REF_NAME} state=active"
+ansible-playbook hw_20/create_instance.yaml --extra-vars="instance_name=${CI_COMMIT_REF_NAME} state=deleted"
 ```
 
-Docker-72e3439b3339.json в формате base64 добавлен в секретные переменные в Gitlab CI
-
-Создать и удалить ВМ из плейбука:
+Для передачи credential файла к сервисному аккаунту использую секретные переменные в  Gitlab, перекодировав предварительно
+в base64
 ```bash
-ansible-playbook hw_20/create_instance.yaml --extra-vars="credentials_file=../Docker-72e3439b3339.json state=active"
+base64 -i Docker-72e3439b3339.json
+``` 
 
-ansible-playbook hw_20/create_instance.yaml --extra-vars="credentials_file=../Docker-72e3439b3339.json state=deleted"
+Используемая литература: 
+* http://docs.ansible.com/ansible/latest/guide_gce.html
+* http://docs.ansible.com/ansible/latest/gce_module.html
+* https://docs.gitlab.com/ee/ci/ssh_keys/README.html - деплой приватного ssh-ключа
+* https://docs.gitlab.com/ce/ci/environments.html#stopping-an-environment - остановка Окружени.
+
+Для работы Ansible нужнен питон, определенные пакеты, так же gce-модуль требует определенных зависимостей. Я решил 
+сделать отдельный Docker-контейрер (hw_20/Dockerfile) и для management операций подключать его в job'ах.  
+Так же на этих job'ах исключаю before_script, мне кажется в этом пайплайне (с учетом следующего задания) он вообще лишний.
+```bash
+create_vm_job:
+  before_script:
+    - echo "skip before_script"
+  image: f3ex/ansible-gcp:0.2
+
+stop_vm_job:
+  before_script:
+    - echo "skip before_script"
+  image: f3ex/ansible-gcp:0.2
+```
+
+Кнопка стоп сделана по мануалу из ссылки выше.
+```bash
+  environment:
+    on_stop: stop_vm_job
 ```
 
 ## ДЗ **
 
-https://gitlab.com/gitlab-org/omnibus-gitlab/issues/1312
+Тут задача была достаточно интересной, практической, т.е. отражает то, с чем можно столкнуться в реальной работе.
 
-Тут надо отметить, что сама лаба с примером не идеальная, нет как такового диплоя, мы не используем артифакты с предыдущих шагов,
-bundle install запускаем вообще на каждом шаге.
+Но надо отметить, что сама изначальная лаба с примером не идеальная, нет как такового диплоя, мы не используем артифакты с предыдущих шагов,
+bundle install запускаем вообще на каждом шаге. Пришлось делать много костылей, и вообще прошу больше рассматривать как PoC.  
+Сейчас я бы разделил само прилоежние и mgmt-часть по ее деплою.
+
+Я пошел по пути на шаше build собрать докер-image из каталога reddit-microservices, поменить артифакты в gitlab regestry
+и развернуть из них контейреры на этапе деплоя (deploy_except_master_branch_job).
+
+Первое с чем я столкнулся - regestry работает только по https (https://docs.gitlab.com/ce/administration/container_registry.html)  
+Можно было пойти по пути натягивания домена и сертификата с let's encrypt, но я решил пойти по пути создания несекурного
+репозитория ()https://gitlab.com/gitlab-org/omnibus-gitlab/issues/1312).
+
+Сейчас я бы пошел делать сертификат, т.к. на всех хостах с dockerd нужно добавить его разрешать и перезапускать докер.
+Для меня это оказалось 3 хоста - ноутбук, сервер с gitlab и созданная машина (машины) на предыдущем шаге
+```bash
+root@gitlab:~# cat /etc/docker/daemon.json
+{
+  "insecure-registries" : ["35.187.176.178:4567"]
+}
+
+systemctl restart dockerd
+```
+
+Т.к. мы этапах билда и деплоя не знаем о доступе к ВМ, то я решил это делать через динамический инвентарь.
 
 Проверка динамического инвентори
 ```bash
@@ -112,18 +156,69 @@ example2-test-vm | SUCCESS => {
 }
 ```
 
-Так запускается плейбук по деплою приложения
+Тут пришлось повозиться, очень долго не понимал как делать докер в докер, думал даже делать отдельный хост для билдов и
+в качестве executor'a ставить ssh.  
+
+Я создал отдельный раннер для билдов gitlab-runner-for-build и поменял его конфиг, чтобы "дочерний" докер-контейрер `docker`
+имел доступ к докер-демону. Так же на раннер добавляется тег docker-build
 ```bash
-ANSIBLE_SSH_RETRIES=5 ANSIBLE_HOST_KEY_CHECKING=False GCE_EMAIL=gitlab@docker-193517.iam.gserviceaccount.com GCE_PROJECT=docker-193517 GCE_CREDENTIALS_FILE_PATH=./Docker-72e3439b3339.json ansible-playbook -l example2-"${CI_COMMIT_REF_NAME}" -i ./hw_20/gce.py hw_20/deploy_and_run_reddit_via_compose.yaml
+cat /etc/gitlab-runner/config.toml | egrep "privileged|volumes"
+    privileged = true
+    volumes = ["/var/run/docker.sock:/var/run/docker.sock", "/cache"]
+```
+Этап сборки приложения. Навешивается тег, который связывает задачу и со специальным раннером. В этом задание собираются
+три контейра и пушатся в реджестри.
+
+```yaml
+build_job:
+  before_script:
+    - echo "skip before_script"
+  stage: build
+  image: docker
+  tags:
+    - docker-build
+  script:
+
+    - docker login -u gitlab-ci-token -p $GITLAB_CI_TOKEN http://35.187.176.178:4567
+    - docker build -t 35.187.176.178:4567/homework/example2/reddit-ui:$CI_COMMIT_REF_NAME reddit-microservices/ui/
+    - docker push 35.187.176.178:4567/homework/example2/reddit-ui:$CI_COMMIT_REF_NAME
+    - docker build -t 35.187.176.178:4567/homework/example2/comment:$CI_COMMIT_REF_NAME reddit-microservices/comment/
+    - docker push 35.187.176.178:4567/homework/example2/comment:$CI_COMMIT_REF_NAME
+    - docker build -t 35.187.176.178:4567/homework/example2/post-py:$CI_COMMIT_REF_NAME reddit-microservices/post-py/
+    - docker push 35.187.176.178:4567/homework/example2/post-py:$CI_COMMIT_REF_NAME
 ```
 
-```bash
-root@gitlab:~# cat /etc/docker/daemon.json
-{
-  "insecure-registries" : ["35.187.176.178:4567"]
-}
-
-systemctl restart dockerd
+Это задача для деплоя приложения. 
+* Bспользуется образ с предустановленным ansible с предыдущего шага.
+* Доставляется ssh-ключ и ключ сервисного аккаунта через секреты.
+* Дальше запускается ansible playbook (hw_20/deploy_and_run_reddit_via_compose.yaml) для установки докера, подключению к
+registry, стягиванию образов и их запуску через docker-compose (hw_20/docker-compose.yaml). Написан не оптимально, но
+с учетом того, что вообще эта задача на делелю, а я у меня в распоряжение только выходные, то отправляю как есть.
+```yaml
+deploy_except_master_branch_job:
+  before_script:
+    - echo "skip before_script"
+  image: f3ex/ansible-gcp:0.2
+  stage: deploy_except_master_branch
+  script:
+    - source /env/bin/activate
+    - echo "${APPUSER_SSH_KEY}" |  base64 -d > appuser_ssh_key
+    - chmod 600 appuser_ssh_key
+    - eval $(ssh-agent )
+    - ssh-add appuser_ssh_key
+    - echo "${GCP_CREDS_JSON}" | base64 -d > Docker-72e3439b3339.json
+    - >
+      ANSIBLE_SSH_RETRIES=5 ANSIBLE_HOST_KEY_CHECKING=False GCE_EMAIL=gitlab@docker-193517.iam.gserviceaccount.com
+      GCE_PROJECT=docker-193517 GCE_CREDENTIALS_FILE_PATH=./Docker-72e3439b3339.json
+      ansible-playbook -l example2-"${CI_COMMIT_REF_NAME}"
+      --extra-vars="regestry_login=gitlab-ci-token regestry_password=${GITLAB_CI_TOKEN} branch=${CI_COMMIT_REF_NAME}"
+      -i ./hw_20/gce.py hw_20/deploy_and_run_reddit_via_compose.yaml
+  environment:
+    name: manage_vm/$CI_COMMIT_REF_NAME
+  only:
+    - branches
+  except:
+    - master
 ```
 
 # HW 19 Docker-6

@@ -71,7 +71,6 @@ build_job:
     - docker build -t 35.187.176.178:4567/homework/example2/post-py:$CI_COMMIT_REF_NAME reddit-microservices/post-py/
     - docker push 35.187.176.178:4567/homework/example2/post-py:$CI_COMMIT_REF_NAME
 
-###################
 deploy_except_master_branch_job:
   before_script:
     - echo "skip before_script"
@@ -96,7 +95,6 @@ deploy_except_master_branch_job:
     - branches
   except:
     - master
-####
 
 test_unit_job:
   stage: test
