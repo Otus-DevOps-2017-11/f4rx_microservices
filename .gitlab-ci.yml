@@ -55,6 +55,8 @@ build_job:
     - echo "skip before_script"
   stage: build
   image: docker
+  tags:
+    - docker-build
   script:
     - docker build -t reddit/ui reddit-microservices/ui/
     - docker login -u gitlab-ci-token -p $GITLAB_CI_TOKEN
