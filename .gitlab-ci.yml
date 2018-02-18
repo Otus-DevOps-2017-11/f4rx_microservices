@@ -60,7 +60,7 @@ build_job:
   script:
     - docker login -u gitlab-ci-token -p $GITLAB_CI_TOKEN http://35.187.176.178:4567
     - docker build -t reddit/ui reddit-microservices/ui/ 
-    - docker push reddit/ui
+    - docker push reddit/ui 35.187.176.178:4567/homework/example2
 
 ####################
 #build_job:
