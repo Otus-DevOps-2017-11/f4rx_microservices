@@ -12,7 +12,6 @@ services:
           - comment_db
   ui:
     container_name: c_ui
-    build: ./ui
     image: ${USERNAME}/ui:${APP_UI_VERSION}
     ports:
       - ${APP_EXT_PORT}:9292/tcp
@@ -20,7 +19,6 @@ services:
       - reddit
   post:
     container_name: c_post
-    build: ./post-py
     image: ${USERNAME}/post:${APP_POST_VERSION}
     networks:
       reddit:
@@ -28,12 +26,31 @@ services:
           - post
   comment:
     container_name: c_comment
-    build: ./comment
     image: ${USERNAME}/comment:${APP_COMMENT_VERSION}
     networks:
       reddit:
         aliases:
           - comment
+  prometheus:
+    image: ${USER_NAME}/prometheus
+    ports:
+      - '9090:9090'
+    networks:
+      - reddit
+
+  node-exporter:
+    image: prom/node-exporter
+    user: root
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points="^/(sys|proc|dev|host|etc)($$|/)"'
+    networks:
+      - reddit
 
 volumes:
   post_db:

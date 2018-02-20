@@ -32,6 +32,99 @@ Table of Contents
 
 Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 
+# HW 21 Monitoring-1
+
+```bash
+gcloud compute firewall-rules create prometheus-default --allow tcp:9090
+
+gcloud compute firewall-rules create puma-default --allow tcp:9292
+
+export GOOGLE_PROJECT=docker-193517
+
+# create docker host
+docker-machine create --driver google \
+    --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
+    --google-machine-type n1-standard-1 \
+    vm1
+
+# configure local env
+eval $(docker-machine env vm1)
+
+docker run --rm -p 9090:9090 -d --name prometheus  prom/prometheus
+
+$ docker ps
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                    NAMES
+0dfb2d25c01b        prom/prometheus     "/bin/prometheus --c…"   24 seconds ago      Up 21 seconds       0.0.0.0:9090->9090/tcp   prometheus
+
+$ docker-machine ip vm1
+104.154.135.156
+
+open http://$(docker-machine ip vm1):9090
+
+docker stop prometheus
+```
+
+Навели марафет, собираем билд
+
+```bash
+export USER_NAME=f3ex
+
+$ docker build -t $USER_NAME/prometheus monitoring/prometheus
+Sending build context to Docker daemon  3.072kB
+Step 1/2 : FROM prom/prometheus
+ ---> c8ecf7c719c1
+Step 2/2 : ADD prometheus.yml /etc/prometheus/
+ ---> 734c10108fc9
+Successfully built 734c10108fc9
+Successfully tagged f3ex/prometheus:latest
+```
+
+```bash
+for i in ui post-py comment; do cd src/$i; bash docker_build.sh; cd -; done
+```
+
+Поднимаем все
+```bash
+cd docker
+docker-compose up -d
+```
+
+```bash
+docker-compose stop post
+docker-compose start post
+```
+
+Exporter
+```bash
+cd ../monitoring/prometheus
+docker build -t $USER_NAME/prometheus .
+
+cd ../../docker
+docker-compose down
+docker-compose up -d
+docker-machine ssh vm1
+
+yes > /dev/null
+```
+
+На графике смотрим node_load1
+
+```bash
+$ docker login
+Login Succeeded
+
+docker push $USER_NAME/ui
+docker push $USER_NAME/comment
+docker push $USER_NAME/post
+docker push $USER_NAME/prometheus
+# Удалите виртуалку:
+docker-machine rm vm1
+```
+
+Docker hub - https://hub.docker.com/r/f3ex/
+
+## Основное задание
+
 # HW 20 Docker-7
 
 ## Основное задание
