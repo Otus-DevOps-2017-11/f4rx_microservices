@@ -5,29 +5,230 @@ Table of Contents
 
    * [Aleksey Stepanenko](#aleksey-stepanenko)
    * [Table of Contents](#table-of-contents)
+   * [HW 20 Docker-7](#hw-20-docker-7)
+      * [Основное задание](#Основное-задание)
+      * [ДЗ * (Авторазварачивание environment)](#ДЗ--Авторазварачивание-environment)
+      * [ДЗ ** (Деплой приложения)](#ДЗ--Деплой-приложения)
    * [HW 19 Docker-6](#hw-19-docker-6)
+      * [Основное задание](#Основное-задание-1)
       * [ДЗ * (Авто регистрация Runner)](#ДЗ--Авто-регистрация-runner)
       * [ДЗ ** (Нотификация в слак)](#ДЗ--Нотификация-в-слак)
    * [HW 17 Docker-4](#hw-17-docker-4)
-      * [Основное задание](#Основное-задание)
+      * [Основное задание](#Основное-задание-2)
       * [ДЗ ** (Bridge network driver)](#ДЗ--bridge-network-driver)
       * [HW 17 ДЗ***](#hw-17-ДЗ)
       * [17 ДЗ**** (Override)](#17-ДЗ-override)
    * [HW 16 Dockder-3](#hw-16-dockder-3)
-      * [Основное задание](#Основное-задание-1)
+      * [Основное задание](#Основное-задание-3)
       * [ДЗ * (Сетевые алиасы)](#ДЗ--Сетевые-алиасы)
       * [ДЗ ** (Сборка с alpine)](#ДЗ--Сборка-с-alpine)
       * [ДЗ *** (Ужать образ)](#ДЗ--Ужать-образ)
    * [HW 15 Docker-2](#hw-15-docker-2)
-      * [Основное задание](#Основное-задание-2)
+      * [Основное задание](#Основное-задание-4)
       * [ДЗ *](#ДЗ-)
    * [HW 14 Docker-1](#hw-14-docker-1)
-      * [Основное задание](#Основное-задание-3)
+      * [Основное задание](#Основное-задание-5)
       * [ДЗ *](#ДЗ--1)
 
 Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 
+# HW 20 Docker-7
+
+## Основное задание
+
+Запускаем ВМ с Gitlab и узнаем что у нас изменился адрес
+```bash
+gcloud compute instances start gitlab
+
+$ terraform apply
+...
+gitlab_external_ip = 35.187.176.178
+
+docker-machine rm otus-gitlab
+docker-machine create --driver generic --generic-ip-address=$(terraform output gitlab_external_ip) --generic-ssh-user=subadm --generic-ssh-key ~/.ssh/appuser otus-gitlab
+docker-machine env otus-gitlab
+eval $(docker-machine env otus-gitlab)
+
+# Проверяем
+$ docker ps
+CONTAINER ID        IMAGE                         COMMAND                  CREATED             STATUS                             PORTS                                                            NAMES
+99cb6d9c4ee1        gitlab/gitlab-runner:latest   "/usr/bin/dumb-init …"   2 days ago          Up 23 seconds                                                                                       gitlab-runner-2
+7a7e35a1ed25        gitlab/gitlab-runner:latest   "/usr/bin/dumb-init …"   2 days ago          Up 23 seconds                                                                                       gitlab-runner
+62849345fb52        gitlab/gitlab-ce:latest       "/assets/wrapper"        3 days ago          Up 23 seconds (health: starting)   0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp, 0.0.0.0:2222->22/tcp   hw19_web_1
+```
+
+Из доки:
+```bash
+Add a host without a driver
+You can register an already existing docker host by passing the daemon url. With that, you can have the same workflow as on a host provisioned by docker-machine.
+
+$ docker-machine create --driver none --url=tcp://50.134.234.20:2376 custombox
+$ docker-machine ls
+NAME        ACTIVE   DRIVER    STATE     URL
+custombox   *        none      Running   tcp://50.134.234.20:2376
+```
+
+Меняем адрес в hw_19/docker-compose.yml. Пристреливаем текушие контейнеры (со вторым ранером), и перезапускаем через композ гитлаб
+
+Основное задание выполнено по методичке, пайплайны построены.
+
+![Pipeline](images/hw20_pipeline.png?raw=true "Pipeline")
+![Environment](images/hw20_envinment.png?raw=true "Pipeline")
+
+## ДЗ * (Авторазварачивание environment)
+
+>При пуше новой ветки должен создаваться сервер
+для окружения с возможностью удалить его
+кнопкой. 
+
+Я пошел по пути создание ansible-плейбука hw_20/create_instance.yaml, в нем дергается модуль gce, который умеет создавать
+и удалять VM (через state), так же аргументом принемает имя вети, используя ветку создает ВМ ProjectName-BranchName, в данном случае
+`example2-docker-7`
+
+Пример 
+```bash
+ansible-playbook hw_20/create_instance.yaml --extra-vars="instance_name=${CI_COMMIT_REF_NAME} state=active"
+ansible-playbook hw_20/create_instance.yaml --extra-vars="instance_name=${CI_COMMIT_REF_NAME} state=deleted"
+```
+
+Для передачи credential файла к сервисному аккаунту использую секретные переменные в  Gitlab, перекодировав предварительно
+в base64
+```bash
+base64 -i Docker-72e3439b3339.json
+``` 
+
+Используемая литература: 
+* http://docs.ansible.com/ansible/latest/guide_gce.html
+* http://docs.ansible.com/ansible/latest/gce_module.html
+* https://docs.gitlab.com/ee/ci/ssh_keys/README.html - деплой приватного ssh-ключа
+* https://docs.gitlab.com/ce/ci/environments.html#stopping-an-environment - остановка Окружени.
+
+Для работы Ansible нужнен питон, определенные пакеты, так же gce-модуль требует определенных зависимостей. Я решил 
+сделать отдельный Docker-контейрер (hw_20/Dockerfile) и для management операций подключать его в job'ах.  
+Так же на этих job'ах исключаю before_script, мне кажется в этом пайплайне (с учетом следующего задания) он вообще лишний.
+```bash
+create_vm_job:
+  before_script:
+    - echo "skip before_script"
+  image: f3ex/ansible-gcp:0.2
+
+stop_vm_job:
+  before_script:
+    - echo "skip before_script"
+  image: f3ex/ansible-gcp:0.2
+```
+
+Кнопка стоп сделана по мануалу из ссылки выше.
+```bash
+  environment:
+    on_stop: stop_vm_job
+```
+
+## ДЗ ** (Деплой приложения)
+
+Тут задача была достаточно интересной, практической, т.е. отражает то, с чем можно столкнуться в реальной работе.
+
+Но надо отметить, что сама изначальная лаба с примером не идеальная, нет как такового диплоя, мы не используем артифакты с предыдущих шагов,
+bundle install запускаем вообще на каждом шаге. Пришлось делать много костылей, и вообще прошу больше рассматривать как PoC.  
+Сейчас я бы разделил само приложение и mgmt-часть по ее деплою.
+
+Я пошел по пути на шаше build собрать докер-image из каталога reddit-microservices, поменить артифакты в gitlab regestry
+и развернуть из них контейреры на этапе деплоя (deploy_except_master_branch_job).
+
+Первое с чем я столкнулся - regestry работает только по https (https://docs.gitlab.com/ce/administration/container_registry.html)  
+Можно было пойти по пути натягивания домена и сертификата с let's encrypt, но я решил пойти по пути создания несекурного
+репозитория ()https://gitlab.com/gitlab-org/omnibus-gitlab/issues/1312).
+
+Сейчас я бы пошел делать сертификат, т.к. на всех хостах с dockerd нужно добавить его разрешать и перезапускать докер.
+Для меня это оказалось 3 хоста - ноутбук, сервер с gitlab и созданная машина (машины) на предыдущем шаге
+```bash
+root@gitlab:~# cat /etc/docker/daemon.json
+{
+  "insecure-registries" : ["35.187.176.178:4567"]
+}
+
+systemctl restart dockerd
+```
+
+Т.к. мы этапах билда и деплоя не знаем о доступе к ВМ, то я решил это делать через динамический инвентарь.
+
+Проверка динамического инвентори
+```bash
+$ GCE_EMAIL=gitlab@docker-193517.iam.gserviceaccount.com GCE_PROJECT=docker-193517 GCE_CREDENTIALS_FILE_PATH=./Docker-72e3439b3339.json ansible -i ./hw_20/gce.py example2-test-vm -u appuser -m ping
+example2-test-vm | SUCCESS => {
+    "changed": false,
+    "ping": "pong"
+}
+```
+
+Тут пришлось повозиться, очень долго не понимал как делать докер в докер, думал даже делать отдельный хост для билдов и
+в качестве executor'a ставить ssh.  
+
+Я создал отдельный раннер для билдов gitlab-runner-for-build и поменял его конфиг, чтобы "дочерний" докер-контейрер `docker`
+имел доступ к докер-демону. Так же на раннер добавляется тег docker-build
+```bash
+cat /etc/gitlab-runner/config.toml | egrep "privileged|volumes"
+    privileged = true
+    volumes = ["/var/run/docker.sock:/var/run/docker.sock", "/cache"]
+```
+Этап сборки приложения. Навешивается тег, который связывает задачу и со специальным раннером. В этом задание собираются
+три контейра и пушатся в реджестри.
+
+```yaml
+build_job:
+  before_script:
+    - echo "skip before_script"
+  stage: build
+  image: docker
+  tags:
+    - docker-build
+  script:
+
+    - docker login -u gitlab-ci-token -p $GITLAB_CI_TOKEN http://35.187.176.178:4567
+    - docker build -t 35.187.176.178:4567/homework/example2/reddit-ui:$CI_COMMIT_REF_NAME reddit-microservices/ui/
+    - docker push 35.187.176.178:4567/homework/example2/reddit-ui:$CI_COMMIT_REF_NAME
+    - docker build -t 35.187.176.178:4567/homework/example2/comment:$CI_COMMIT_REF_NAME reddit-microservices/comment/
+    - docker push 35.187.176.178:4567/homework/example2/comment:$CI_COMMIT_REF_NAME
+    - docker build -t 35.187.176.178:4567/homework/example2/post-py:$CI_COMMIT_REF_NAME reddit-microservices/post-py/
+    - docker push 35.187.176.178:4567/homework/example2/post-py:$CI_COMMIT_REF_NAME
+```
+
+Это задача для деплоя приложения. 
+* Bспользуется образ с предустановленным ansible с предыдущего шага.
+* Доставляется ssh-ключ и ключ сервисного аккаунта через секреты.
+* Дальше запускается ansible playbook (hw_20/deploy_and_run_reddit_via_compose.yaml) для установки докера, подключению к
+registry, стягиванию образов и их запуску через docker-compose (hw_20/docker-compose.yaml). Написан не оптимально, но
+с учетом того, что вообще эта задача на делелю, а я у меня в распоряжение только выходные, то отправляю как есть.
+```yaml
+deploy_except_master_branch_job:
+  before_script:
+    - echo "skip before_script"
+  image: f3ex/ansible-gcp:0.2
+  stage: deploy_except_master_branch
+  script:
+    - source /env/bin/activate
+    - echo "${APPUSER_SSH_KEY}" |  base64 -d > appuser_ssh_key
+    - chmod 600 appuser_ssh_key
+    - eval $(ssh-agent )
+    - ssh-add appuser_ssh_key
+    - echo "${GCP_CREDS_JSON}" | base64 -d > Docker-72e3439b3339.json
+    - >
+      ANSIBLE_SSH_RETRIES=5 ANSIBLE_HOST_KEY_CHECKING=False GCE_EMAIL=gitlab@docker-193517.iam.gserviceaccount.com
+      GCE_PROJECT=docker-193517 GCE_CREDENTIALS_FILE_PATH=./Docker-72e3439b3339.json
+      ansible-playbook -l example2-"${CI_COMMIT_REF_NAME}"
+      --extra-vars="regestry_login=gitlab-ci-token regestry_password=${GITLAB_CI_TOKEN} branch=${CI_COMMIT_REF_NAME}"
+      -i ./hw_20/gce.py hw_20/deploy_and_run_reddit_via_compose.yaml
+  environment:
+    name: manage_vm/$CI_COMMIT_REF_NAME
+  only:
+    - branches
+  except:
+    - master
+```
+
 # HW 19 Docker-6
+
+## Основное задание
 
 Развернуть хост
 
@@ -210,12 +411,11 @@ gitlab/gitlab-runner:latest
 
 docker exec -it gitlab-runner-2 gitlab-runner register --non-interactive \
  --description my-runner-2 \
- --url http://35.205.71.166 \
- --registration-token TVnFHoH \
+ --url http://${IP} \
+ --registration-token afCUy7ynZ8FooZmCpQq4 \
  --executor docker \
  --docker-image alpine:latest \
- --run-untagged \ 
- --locked=false
+ --run-untagged --locked=false
 ```
 
 Пример

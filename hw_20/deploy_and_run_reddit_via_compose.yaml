@@ -1,0 +1,89 @@
+- name: Deploy and run app
+  hosts: all
+  gather_facts: no
+  remote_user: appuser
+
+  vars:
+    regestry_login: gitlab-ci-token
+    regestry_password: PASSWORD
+    branch: master
+
+#  handlers:
+#    - name: restart docker
+#      become: yes
+#      service: name=docker state=restarted
+
+  tasks:
+
+    - name: Add docker key
+      become: yes
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add docker repo
+      become: yes
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu xenial stable
+        state: present
+
+    - name: Install docker-ce docker-compose
+      become: yes
+      apt:
+        name: "{{item}}"
+        update_cache: yes
+      with_items:
+        - docker-ce
+        - docker-compose
+
+    - name: Get docker-compose version
+      shell: docker-compose -v | awk '{print $3}'
+      register: docker_compose_version
+
+    # Из репозитория почему-то ставится 1.8
+    - name: Download docker-compose
+      become: yes
+      get_url:
+        url: https://github.com/docker/compose/releases/download/1.19.0/docker-compose-Linux-x86_64
+        dest: /usr/bin/docker-compose
+        mode: 0755
+        force: yes
+      when: docker_compose_version != "1.19.0,"
+
+    - name: Deploy reddit-microservices
+      synchronize:
+        src: ../hw_20/docker-compose.yaml
+        dest: ~/
+
+    - name: setup insecure-registries
+      become: yes
+      copy:
+        src: daemon.json
+        dest: /etc/docker/daemon.json
+#      notify:
+#        - restart docker
+
+    # Перезагрузка сервиса так не сработает, т.к. сервис перезагружится только в конце плейбука, надо их разбивать
+
+    - name: restart dockerd
+      become: yes
+      command: systemctl restart docker
+
+    # Error: Cannot perform an interactive login from a non TTY device
+#    - name: Add regestry
+#      become: yes
+#      raw: docker login -u "{{regestry_login}}" -p "{{regestry_password}}"
+
+    - name: Log into private registry and force re-authorization
+      become: yes
+      docker_login:
+        registry: http://35.187.176.178:4567
+        username: "{{regestry_login}}"
+        password: "{{regestry_password}}"
+
+    - copy: content="BRANCH={{ branch }}" dest=~/.env
+
+    - name: Start app
+      shell: cd ~/ && sudo -H docker-compose pull --parallel && sudo -H docker-compose down && sudo -H docker-compose up -d
+
+

@@ -5,3 +5,6 @@ terraform-gitlab/*lock.info
 terraform-gitlab/*tfstate
 terraform-gitlab/*backup
 terraform-gitlab/.terraform
+Docker-72e3439b3339.json
+env
+*.retry
