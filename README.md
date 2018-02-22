@@ -34,6 +34,8 @@ Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 
 # HW 21 Monitoring-1
 
+## Основное задание
+
 ```bash
 gcloud compute firewall-rules create prometheus-default --allow tcp:9090
 
@@ -123,7 +125,49 @@ docker-machine rm vm1
 
 Docker hub - https://hub.docker.com/r/f3ex/
 
-## Основное задание
+## ДЗ * (mongo exporter)
+Первая в гугле ссылка меня привела на https://github.com/dcu/mongodb_exporter, проект вроде разивается, там есть Dockerfile, 
+скопировал себе в hw_21 (hw_21/mongodb_exporter/), но проект у меня изначалаьно не собрался
+```bash
+[INFO]	Replacing existing vendor dependencies
+mkdir -p release
+perl -p -i -e 's/{{VERSION}}/v1.0.0/g' mongodb_exporter.go
+Unescaped left brace in regex is illegal here in regex; marked by <-- HERE in m/{{ <-- HERE VERSION}}/ at -e line 1.
+make: *** [Makefile:19: release] Error 255
+The command '/bin/sh -c cd /go/src/github.com/dcu/mongodb_exporter && make release' returned a non-zero code: 2
+```
+Добавил экранирование в Makefile, собрал, загрузил образ себе https://hub.docker.com/r/f3ex/mongodb_exporter/
+
+Для настройки нужен получить две ручки - передать адрес монги и узнать порт на котором слушает
+```bash
+To pass in the mongodb url securely, you can set the MONGODB_URL environment variable instead.
+
+  -web.listen-address string
+    	Address on which to expose metrics and web interface. (default ":9001")
+```
+
+docker-compose.yaml:
+```yaml
+  mongodb-exporter:
+    container_name: mongodb-exporter
+    image: f3ex/mongodb_exporter
+    environment:
+      - MONGODB_URL=post_db
+    ports:
+      - '9001:9001'
+    networks:
+      - reddit
+```
+
+prometheus.yaml
+```yaml
+  - job_name: 'mongodb'
+    static_configs:
+      - targets:
+        - 'mongodb-exporter:9001'
+```
+
+![MongoDB exporter](images/hw21_mongodb_exporter.png?raw=true "Pipeline")
 
 # HW 20 Docker-7
 

@@ -10,6 +10,24 @@ services:
         aliases:
           - post_db
           - comment_db
+
+  mongodb-exporter:
+    container_name: mongodb-exporter
+    image: f3ex/mongodb_exporter
+    environment:
+      - MONGODB_URL=post_db
+    ports:
+      - '9001:9001'
+    networks:
+      - reddit
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter
+    ports:
+      - '9115:9115'
+    networks:
+      - reddit
+
   ui:
     container_name: c_ui
     image: ${USERNAME}/ui:${APP_UI_VERSION}
