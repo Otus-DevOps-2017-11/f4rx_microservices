@@ -169,6 +169,46 @@ prometheus.yaml
 
 ![MongoDB exporter](images/hw21_mongodb_exporter.png?raw=true "Pipeline")
 
+## ДЗ ** (Blackbox)
+> Добавьте в Prometheus мониторинг сервисов comment, post, ui с помощью blackbox экспортера.
+
+docker-compose.yaml
+```bash
+  blackbox-exporter:
+    image: prom/blackbox-exporter
+    ports:
+      - '9115:9115'
+    networks:
+      - reddit
+```
+
+prometheus.yaml
+```bash
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]  # Look for a HTTP 200 response.
+    static_configs:
+      - targets:
+        - http://c_ui:9292    # Target to probe with http.
+        - http://c_comment:9292
+        - http://c_post:5000
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115  # The blackbox exporter's real hostname:port.
+```
+
+Но я не понял что я сделал, как сказать, что 404 с комментов и поста это ОК ? Конфиг мне кажется очень сложным и непонятным.
+https://github.com/prometheus/blackbox_exporter/blob/master/CONFIGURATION.md и https://github.com/prometheus/blackbox_exporter/blob/master/example.yml
+
+## ДЗ *** (Makefile)
+
+Взял за основу у Nefariusmag, ценности не могу оценить, т.к. того же можно добавить через docker-compose с секциями билд и пущ.
+
 # HW 20 Docker-7
 
 ## Основное задание
