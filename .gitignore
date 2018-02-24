@@ -9,3 +9,5 @@ Docker-72e3439b3339.json
 env
 *.retry
 *build_info.txt
+docker/.env
+hw_21
