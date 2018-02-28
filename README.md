@@ -32,6 +32,183 @@ Table of Contents
 
 Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 
+# HW 21 Monitoring-1
+
+## Основное задание
+
+```bash
+gcloud compute firewall-rules create prometheus-default --allow tcp:9090
+
+gcloud compute firewall-rules create puma-default --allow tcp:9292
+
+export GOOGLE_PROJECT=docker-193517
+
+# create docker host
+docker-machine create --driver google \
+    --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
+    --google-machine-type n1-standard-1 \
+    vm1
+
+# configure local env
+eval $(docker-machine env vm1)
+
+docker run --rm -p 9090:9090 -d --name prometheus  prom/prometheus
+
+$ docker ps
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                    NAMES
+0dfb2d25c01b        prom/prometheus     "/bin/prometheus --c…"   24 seconds ago      Up 21 seconds       0.0.0.0:9090->9090/tcp   prometheus
+
+$ docker-machine ip vm1
+104.154.135.156
+
+open http://$(docker-machine ip vm1):9090
+
+docker stop prometheus
+```
+
+Навели марафет, собираем билд
+
+```bash
+export USER_NAME=f3ex
+
+$ docker build -t $USER_NAME/prometheus monitoring/prometheus
+Sending build context to Docker daemon  3.072kB
+Step 1/2 : FROM prom/prometheus
+ ---> c8ecf7c719c1
+Step 2/2 : ADD prometheus.yml /etc/prometheus/
+ ---> 734c10108fc9
+Successfully built 734c10108fc9
+Successfully tagged f3ex/prometheus:latest
+```
+
+```bash
+for i in ui post-py comment; do cd src/$i; bash docker_build.sh; cd -; done
+```
+
+Поднимаем все
+```bash
+cd docker
+docker-compose up -d
+```
+
+```bash
+docker-compose stop post
+docker-compose start post
+```
+
+Exporter
+```bash
+cd ../monitoring/prometheus
+docker build -t $USER_NAME/prometheus .
+
+cd ../../docker
+docker-compose down
+docker-compose up -d
+docker-machine ssh vm1
+
+yes > /dev/null
+```
+
+На графике смотрим node_load1
+
+```bash
+$ docker login
+Login Succeeded
+
+docker push $USER_NAME/ui
+docker push $USER_NAME/comment
+docker push $USER_NAME/post
+docker push $USER_NAME/prometheus
+# Удалите виртуалку:
+docker-machine rm vm1
+```
+
+Docker hub - https://hub.docker.com/r/f3ex/
+
+## ДЗ * (mongo exporter)
+Первая в гугле ссылка меня привела на https://github.com/dcu/mongodb_exporter, проект вроде разивается, там есть Dockerfile, 
+скопировал себе в hw_21 (hw_21/mongodb_exporter/), но проект у меня изначалаьно не собрался
+```bash
+[INFO]	Replacing existing vendor dependencies
+mkdir -p release
+perl -p -i -e 's/{{VERSION}}/v1.0.0/g' mongodb_exporter.go
+Unescaped left brace in regex is illegal here in regex; marked by <-- HERE in m/{{ <-- HERE VERSION}}/ at -e line 1.
+make: *** [Makefile:19: release] Error 255
+The command '/bin/sh -c cd /go/src/github.com/dcu/mongodb_exporter && make release' returned a non-zero code: 2
+```
+Добавил экранирование в Makefile, собрал, загрузил образ себе https://hub.docker.com/r/f3ex/mongodb_exporter/
+
+Для настройки нужен получить две ручки - передать адрес монги и узнать порт на котором слушает
+```bash
+To pass in the mongodb url securely, you can set the MONGODB_URL environment variable instead.
+
+  -web.listen-address string
+    	Address on which to expose metrics and web interface. (default ":9001")
+```
+
+docker-compose.yaml:
+```yaml
+  mongodb-exporter:
+    container_name: mongodb-exporter
+    image: f3ex/mongodb_exporter
+    environment:
+      - MONGODB_URL=post_db
+    ports:
+      - '9001:9001'
+    networks:
+      - reddit
+```
+
+prometheus.yaml
+```yaml
+  - job_name: 'mongodb'
+    static_configs:
+      - targets:
+        - 'mongodb-exporter:9001'
+```
+
+![MongoDB exporter](images/hw21_mongodb_exporter.png?raw=true "Pipeline")
+
+## ДЗ ** (Blackbox)
+> Добавьте в Prometheus мониторинг сервисов comment, post, ui с помощью blackbox экспортера.
+
+docker-compose.yaml
+```bash
+  blackbox-exporter:
+    image: prom/blackbox-exporter
+    ports:
+      - '9115:9115'
+    networks:
+      - reddit
+```
+
+prometheus.yaml
+```bash
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]  # Look for a HTTP 200 response.
+    static_configs:
+      - targets:
+        - http://c_ui:9292    # Target to probe with http.
+        - http://c_comment:9292
+        - http://c_post:5000
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115  # The blackbox exporter's real hostname:port.
+```
+
+Но я не понял что я сделал, как сказать, что 404 с комментов и поста это ОК ? Конфиг мне кажется очень сложным и непонятным.
+https://github.com/prometheus/blackbox_exporter/blob/master/CONFIGURATION.md и https://github.com/prometheus/blackbox_exporter/blob/master/example.yml
+
+## ДЗ *** (Makefile)
+
+Взял за основу у Nefariusmag, ценности не могу оценить, т.к. того же можно добавить через docker-compose с секциями билд и пущ.
+
 # HW 20 Docker-7
 
 ## Основное задание

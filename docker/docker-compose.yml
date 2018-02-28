@@ -1,0 +1,77 @@
+version: '3.3'
+services:
+  post_db:
+    container_name: c_post_db
+    image: mongo:${MONGO_VERSION}
+    volumes:
+      - post_db:/data/db
+    networks:
+      reddit:
+        aliases:
+          - post_db
+          - comment_db
+
+  mongodb-exporter:
+    container_name: mongodb-exporter
+    image: f3ex/mongodb_exporter
+    environment:
+      - MONGODB_URL=post_db
+    ports:
+      - '9001:9001'
+    networks:
+      - reddit
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter
+    ports:
+      - '9115:9115'
+    networks:
+      - reddit
+
+  ui:
+    container_name: c_ui
+    image: ${USERNAME}/ui:${APP_UI_VERSION}
+    ports:
+      - ${APP_EXT_PORT}:9292/tcp
+    networks:
+      - reddit
+  post:
+    container_name: c_post
+    image: ${USERNAME}/post:${APP_POST_VERSION}
+    networks:
+      reddit:
+        aliases:
+          - post
+  comment:
+    container_name: c_comment
+    image: ${USERNAME}/comment:${APP_COMMENT_VERSION}
+    networks:
+      reddit:
+        aliases:
+          - comment
+  prometheus:
+    image: ${USER_NAME}/prometheus
+    ports:
+      - '9090:9090'
+    networks:
+      - reddit
+
+  node-exporter:
+    image: prom/node-exporter
+    user: root
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points="^/(sys|proc|dev|host|etc)($$|/)"'
+    networks:
+      - reddit
+
+volumes:
+  post_db:
+
+networks:
+  reddit:
