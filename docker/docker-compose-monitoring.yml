@@ -1,0 +1,83 @@
+version: '3.3'
+services:
+
+  mongodb-exporter:
+    container_name: mongodb-exporter
+    image: f3ex/mongodb_exporter
+    environment:
+      - MONGODB_URL=post_db
+    ports:
+      - '9001:9001'
+    networks:
+      - reddit
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter
+    ports:
+      - '9115:9115'
+    networks:
+      - reddit
+
+  prometheus:
+    image: ${USERNAME}/prometheus
+    ports:
+      - '9090:9090'
+    networks:
+      - reddit
+
+  node-exporter:
+    image: prom/node-exporter
+    user: root
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points="^/(sys|proc|dev|host|etc)($$|/)"'
+    networks:
+      - reddit
+
+  cadvisor:
+    image: google/cadvisor:v0.29.0
+    volumes:
+      - '/:/rootfs:ro'
+      - '/var/run:/var/run:rw'
+      - '/sys:/sys:ro'
+      - '/var/lib/docker/:/var/lib/docker:ro'
+    ports:
+      - '8080:8080'
+    networks:
+      - reddit
+
+  grafana:
+    image: grafana/grafana:5.0.0-beta4
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=secret
+    depends_on:
+      - prometheus
+    ports:
+      - 3000:3000
+    networks:
+      - reddit
+
+  alertmanager:
+    image: ${USERNAME}/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+    ports:
+      - 9093:9093 
+    networks:
+      - reddit
+
+volumes:
+  post_db:
+  grafana_data:
+
+
+networks:
+  reddit:
