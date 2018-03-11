@@ -19,6 +19,11 @@ services:
       - ${APP_EXT_PORT}:9292/tcp
     networks:
       - reddit
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: service.post
 
   post:
     container_name: c_post
@@ -27,6 +32,11 @@ services:
       reddit:
         aliases:
           - post
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: service.post
 
   comment:
     container_name: c_comment
