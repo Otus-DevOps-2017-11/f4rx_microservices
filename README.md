@@ -40,6 +40,151 @@ Table of Contents
 
 Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 
+# HW 27 Swarm-1
+
+Создаем мастера и воркеры
+```bash
+for host in master-1 worker-1 worker-2; do
+docker-machine create --driver google \
+   --google-project docker-193517  \
+   --google-zone europe-west1-b \
+   --google-machine-type g1-small \
+   --google-machine-image $(gcloud compute images list --filter ubuntu-1604-lts --uri) \
+   ${host}
+done
+```
+
+
+```bash
+eval $(docker-machine env master-1)
+
+$ docker swarm init
+Swarm initialized: current node (yo99xlwm7cepux8ca33m14b9q) is now a manager.
+
+To add a worker to this swarm, run the following command:
+
+    docker swarm join --token SWMTKN-1-29iqeqgkro8b6gmdyazwgba3zaml6dkq5se7aqx6fiyw1ch2fv-7ex0f30w231dnrwf7vcorv4o0 10.132.0.2:2377
+
+To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
+
+
+docker-machine ssh worker-1 sudo  docker swarm join --token SWMTKN-1-29iqeqgkro8b6gmdyazwgba3zaml6dkq5se7aqx6fiyw1ch2fv-7ex0f30w231dnrwf7vcorv4o0 10.132.0.2:2377
+
+docker-machine ssh worker-2 sudo  docker swarm join --token SWMTKN-1-29iqeqgkro8b6gmdyazwgba3zaml6dkq5se7aqx6fiyw1ch2fv-7ex0f30w231dnrwf7vcorv4o0 10.132.0.2:2377
+
+$ docker node ls
+ID                            HOSTNAME            STATUS              AVAILABILITY        MANAGER STATUS
+yo99xlwm7cepux8ca33m14b9q *   master-1            Ready               Active              Leader
+t5o5rbrmw3ygvpm16k3ovkw4s     worker-1            Ready               Active
+ignpky3fcj5pxmwfs4b00t8m3     worker-2            Ready               Active
+
+```
+
+Управляем стеком с помощью команд:
+> $ docker stack deploy/rm/services/ls STACK_NAME 
+
+```bash
+docker stack deploy --compose-file=<(docker-compose -f docker-compose.yml config 2>/dev/null) DEV
+
+$ docker stack services DEV
+ID                  NAME                MODE                REPLICAS            IMAGE                 PORTS
+0orisq8ic66d        DEV_comment         replicated          0/1                 f3ex/comment:latest
+eb435qnb9qq7        DEV_mongo           replicated          1/1                 mongo:3.2
+qqln5hbtee97        DEV_post            replicated          0/1                 f3ex/post:latest
+u4k7upntxlck        DEV_ui              replicated          0/1                 f3ex/ui:latest        *:9292->9292/tcp
+```
+
+```bash
+docker node update --label-add reliability=high master-1
+
+$  docker node ls --filter "label=reliability"
+ID                  HOSTNAME            STATUS              AVAILABILITY        MANAGER STATUS
+
+
+$ docker node ls -q | xargs docker node inspect  -f '{{ .ID }} [{{ .Description.Hostname }}]: {{ .Spec.Labels }}'
+yo99xlwm7cepux8ca33m14b9q [master-1]: map[reliability:high]
+t5o5rbrmw3ygvpm16k3ovkw4s [worker-1]: map[]
+ignpky3fcj5pxmwfs4b00t8m3 [worker-2]: map[]
+
+
+```
+
+Передеплоиваем
+```bash
+$ docker stack deploy --compose-file=<(docker-compose -f docker-compose.yml config 2>/dev/null) DEV
+Updating service DEV_ui (id: u4k7upntxlckcr4czdwoxkdqe)
+Updating service DEV_comment (id: 0orisq8ic66dp5ke5hkq9b51o)
+Updating service DEV_mongo (id: eb435qnb9qq714qj7w2jh9cq8)
+Updating service DEV_post (id: qqln5hbtee97nh29deuq4cqgm)
+
+$  docker stack ps DEV
+ID                  NAME                IMAGE                 NODE                DESIRED STATE       CURRENT STATE             ERROR               PORTS
+rw1zpeva13c0        DEV_post.1          f3ex/post:latest      worker-1            Running             Running 28 seconds ago
+kp6414besejn        DEV_mongo.1         mongo:3.2             master-1            Running             Running 31 seconds ago
+suwy959s8e8u        DEV_comment.1       f3ex/comment:latest   worker-1            Running             Running 31 seconds ago
+q7o3qxs0fuh7        DEV_ui.1            f3ex/ui:latest        worker-2            Running             Running 35 seconds ago
+u0tmwh3soje0        DEV_comment.1       f3ex/comment:latest   worker-1            Shutdown            Shutdown 33 seconds ago
+xfjphj53m710        DEV_ui.1            f3ex/ui:latest        worker-2            Shutdown            Shutdown 36 seconds ago
+qj3jd9odiim1        DEV_post.1          f3ex/post:latest      worker-1            Shutdown            Shutdown 29 seconds ago
+mpy7203944xb        DEV_mongo.1         mongo:3.2             master-1            Shutdown            Shutdown 31 seconds ago
+
+#Проверяем в браузере
+open http://$(docker-machine ip master-1):9292
+
+```
+
+```bash
+$ docker stack services DEV
+ID                  NAME                MODE                REPLICAS            IMAGE                 PORTS
+0orisq8ic66d        DEV_comment         replicated          2/2                 f3ex/comment:latest
+eb435qnb9qq7        DEV_mongo           replicated          1/1                 mongo:3.2
+qqln5hbtee97        DEV_post            replicated          2/2                 f3ex/post:latest
+u4k7upntxlck        DEV_ui              replicated          2/2                 f3ex/ui:latest        *:9292->9292/tcp
+
+```
+
+> 1) Добавить в кластер еще 1 worker машину
+```bash
+docker-machine create --driver google \
+   --google-project docker-193517  \
+   --google-zone europe-west1-b \
+   --google-machine-type g1-small \
+   --google-machine-image $(gcloud compute images list --filter ubuntu-1604-lts --uri) \
+   worker-3
+   
+$ docker-machine ssh worker-3 sudo  docker swarm join --token SWMTKN-1-29iqeqgkro8b6gmdyazwgba3zaml6dkq5se7aqx6fiyw1ch2fv-7ex0f30w231dnrwf7vcorv4o0 10.132.0.2:2377
+This node joined a swarm as a worker.
+```
+2) Проследить какие контейнеры запустятся на ней
+Запустился node-exporter, т.к. у него стоит глобальный деплой
+```bash
+$ docker stack ps DEV | grep worker-3
+jl6dot12vnw5        DEV_node-exporter.mdffy8tlxxcvrj0aeynk8y7gg   prom/node-exporter:v0.15.0   worker-3            Running             Running 20 seconds ago
+
+```
+3) Увеличить число реплик микросервисов (3 - минимум)
+
+4) Проследить какие контейнеры запустятся на новой машине.
+Сравнить с пунктом 2. 
+Развернулись новые контейнеры
+```bash
+$ docker stack ps DEV | grep worker-3
+jl6dot12vnw5        DEV_node-exporter.mdffy8tlxxcvrj0aeynk8y7gg   prom/node-exporter:v0.15.0   worker-3            Running             Running about a minute ago
+juxbrzam40si        DEV_ui.3                                      f3ex/ui:latest               worker-3            Running             Preparing 6 seconds ago
+mbrdnmux2tly        DEV_post.3                                    f3ex/post:latest             worker-3            Running             Preparing 8 seconds ago
+1zmfozs3qnm3        DEV_comment.3                                 f3ex/comment:latest          worker-3            Running             Preparing 20 seconds ago
+
+```
+
+
+```bash
+$ docker inspect $(docker stack ps DEV -q --filter "Name=DEV_ui.1") --format \
+"{{.Status.ContainerStatus.ContainerID}}"
+2fab7fe54ceb73ad3f09499de6c23a41c5c4b632964a3d460bcd4bada3713286
+e1aa48ae476817abde347f13dbcab1f5637c34f05e4bcd1b2de270035d01d1af
+e6f9015bea77f61c05c074c21c150407acc951f431be121d1556599f86f7378d
+```
+
 # HW 25 Logging-1
 
 ## Основное задание

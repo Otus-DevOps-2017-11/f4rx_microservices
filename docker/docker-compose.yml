@@ -1,53 +1,104 @@
-version: '3.3'
+version: '3.5'
 services:
 
-  post_db:
-    container_name: c_post_db
+  mongo:
     image: mongo:${MONGO_VERSION}
+    deploy:
+      placement:
+        constraints:
+          - node.labels.reliability == high
     volumes:
-      - post_db:/data/db
+      - mongo_data:/data/db
     networks:
-      reddit:
+      back_net:
         aliases:
           - post_db
           - comment_db
 
-  ui:
-    container_name: c_ui
-    image: ${USERNAME}/ui:${APP_UI_VERSION}
-    ports:
-      - ${APP_EXT_PORT}:9292/tcp
-    networks:
-      - reddit
-    logging:
-      driver: "fluentd"
-      options:
-        fluentd-address: localhost:24224
-        tag: service.post
-
   post:
-    container_name: c_post
-    image: ${USERNAME}/post:${APP_POST_VERSION}
+    image: ${USER_NAME}/post:${POST_VERSION}
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 10
+        delay: 1s
+      resources:
+        limits:
+          cpus: '0.30'
+          memory: 300M
+      mode: replicated
+      replicas: 3
+      update_config:
+        delay: 10s
+        parallelism: 2
+        failure_action: rollback
+      placement:
+        constraints:
+          - node.role == worker
     networks:
-      reddit:
-        aliases:
-          - post
-    logging:
-      driver: "fluentd"
-      options:
-        fluentd-address: localhost:24224
-        tag: service.post
+      - front_net
+      - back_net
 
   comment:
-    container_name: c_comment
-    image: ${USERNAME}/comment:${APP_COMMENT_VERSION}
+    image: ${USER_NAME}/comment:${COMMENT_VERSION}
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 10
+        delay: 1s
+      resources:
+        limits:
+          cpus: '0.30'
+          memory: 300M
+      mode: replicated
+      replicas: 3
+      update_config:
+        delay: 10s
+        parallelism: 2
+        failure_action: rollback
+      placement:
+        constraints:
+          - node.role == worker
     networks:
-      reddit:
-        aliases:
-          - comment
+      - front_net
+      - back_net
+
+  ui:
+    image: ${USER_NAME}/ui:${UI_VERSION}
+    environment:
+      - ENV=DEV
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+        delay: 3s
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 150M
+      mode: replicated
+      replicas: 3
+      update_config:
+        delay: 5s
+        parallelism: 1
+        failure_action: rollback
+      placement:
+        constraints:
+          - node.role == worker
+    ports:
+      - "${UI_PORT}:9292/tcp"
+    networks:
+      - front_net
+
+  node-exporter:
+    image: prom/node-exporter:v0.15.0
+    deploy:
+      mode: global
+
 
 volumes:
-  post_db:
+  mongo_data: {}
 
 networks:
-  reddit:
+  back_net: {}
+  front_net: {}

@@ -1,8 +1,7 @@
-version: '3.3'
+version: '3.5'
 services:
 
   mongodb-exporter:
-    container_name: mongodb-exporter
     image: f3ex/mongodb_exporter
     environment:
       - MONGODB_URL=post_db
@@ -19,7 +18,7 @@ services:
       - reddit
 
   prometheus:
-    image: ${USERNAME}/prometheus
+    image: ${USER_NAME}/prometheus
     ports:
       - '9090:9090'
     networks:
@@ -28,6 +27,8 @@ services:
   node-exporter:
     image: prom/node-exporter
     user: root
+    deploy:
+      mode: global
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -66,11 +67,11 @@ services:
       - reddit
 
   alertmanager:
-    image: ${USERNAME}/alertmanager
+    image: ${USER_NAME}/alertmanager
     command:
       - '--config.file=/etc/alertmanager/config.yml'
     ports:
-      - 9093:9093 
+      - 9093:9093
     networks:
       - reddit
 
