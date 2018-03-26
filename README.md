@@ -4,41 +4,274 @@ Table of Contents
 =================
 
    * [Aleksey Stepanenko](#aleksey-stepanenko)
-   * [HW 25 Logging-1](#hw-25-logging-1)
+   * [Table of Contents](#table-of-contents)
+   * [HW 28](#hw-28)
+      * [Kubernetes The Hard Way](#kubernetes-the-hard-way)
+         * [1. Prerequisites](#1-prerequisites)
+         * [2. cfssl, cfssljson, and kubectl.](#2-cfssl-cfssljson-and-kubectl)
+         * [3. Сеть, Firewall](#3-Сеть-firewall)
+         * [7. etcd](#7-etcd)
+         * [8. LB](#8-lb)
+         * [9.](#9)
+         * [10.](#10)
+         * [11.](#11)
+         * [12.](#12)
+         * [13. Smoke Test](#13-smoke-test)
       * [Основное задание](#Основное-задание)
-   * [HW 23 Monitoring-2](#hw-23-monitoring-2)
+   * [HW 27 Swarm-1](#hw-27-swarm-1)
+   * [HW 25 Logging-1](#hw-25-logging-1)
       * [Основное задание](#Основное-задание-1)
-   * [HW 21 Monitoring-1](#hw-21-monitoring-1)
+   * [HW 23 Monitoring-2](#hw-23-monitoring-2)
       * [Основное задание](#Основное-задание-2)
+   * [HW 21 Monitoring-1](#hw-21-monitoring-1)
+      * [Основное задание](#Основное-задание-3)
       * [ДЗ * (mongo exporter)](#ДЗ--mongo-exporter)
       * [ДЗ ** (Blackbox)](#ДЗ--blackbox)
       * [ДЗ *** (Makefile)](#ДЗ--makefile)
    * [HW 20 Docker-7](#hw-20-docker-7)
-      * [Основное задание](#Основное-задание-3)
+      * [Основное задание](#Основное-задание-4)
       * [ДЗ * (Авторазварачивание environment)](#ДЗ--Авторазварачивание-environment)
       * [ДЗ ** (Деплой приложения)](#ДЗ--Деплой-приложения)
    * [HW 19 Docker-6](#hw-19-docker-6)
-      * [Основное задание](#Основное-задание-4)
+      * [Основное задание](#Основное-задание-5)
       * [ДЗ * (Авто регистрация Runner)](#ДЗ--Авто-регистрация-runner)
       * [ДЗ ** (Нотификация в слак)](#ДЗ--Нотификация-в-слак)
    * [HW 17 Docker-4](#hw-17-docker-4)
-      * [Основное задание](#Основное-задание-5)
+      * [Основное задание](#Основное-задание-6)
       * [ДЗ ** (Bridge network driver)](#ДЗ--bridge-network-driver)
       * [HW 17 ДЗ***](#hw-17-ДЗ)
       * [17 ДЗ**** (Override)](#17-ДЗ-override)
    * [HW 16 Dockder-3](#hw-16-dockder-3)
-      * [Основное задание](#Основное-задание-6)
+      * [Основное задание](#Основное-задание-7)
       * [ДЗ * (Сетевые алиасы)](#ДЗ--Сетевые-алиасы)
       * [ДЗ ** (Сборка с alpine)](#ДЗ--Сборка-с-alpine)
       * [ДЗ *** (Ужать образ)](#ДЗ--Ужать-образ)
    * [HW 15 Docker-2](#hw-15-docker-2)
-      * [Основное задание](#Основное-задание-7)
+      * [Основное задание](#Основное-задание-8)
       * [ДЗ *](#ДЗ-)
    * [HW 14 Docker-1](#hw-14-docker-1)
-      * [Основное задание](#Основное-задание-8)
+      * [Основное задание](#Основное-задание-9)
       * [ДЗ *](#ДЗ--1)
 
 Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
+
+# HW 28
+
+## Kubernetes The Hard Way
+
+Развернуть лабу согласно с гайдом https://github.com/kelseyhightower/kubernetes-the-hard-way/
+
+### 1. Prerequisites
+Проверяем, что установлен gcloud и дефолтные зоны
+```bash
+$ gcloud config get-value compute/region
+europe-west1
+
+$ gcloud config get-value compute/zone
+europe-west1-b
+```
+
+### 2. cfssl, cfssljson, and kubectl.
+
+```bash
+$ cfssl version
+
+Version: 1.2.0
+Revision: dev
+Runtime: go1.6
+
+$ kubectl version --client
+
+Client Version: version.Info{Major:"1", Minor:"9", GitVersion:"v1.9.0", GitCommit:"925c127ec6b946659ad0fd596fa959be43f0cc05", GitTreeState:"clean", BuildDate:"2017-12-15T21:07:38Z", GoVersion:"go1.9.2", Compiler:"gc", Platform:"darwin/amd64"}
+```
+
+### 3. Сеть, Firewall
+Создали сеть и фаерволлы
+```bash
+$ gcloud compute addresses list --filter="name=('kubernetes-the-hard-way')"
+
+NAME                     REGION        ADDRESS        STATUS
+kubernetes-the-hard-way  europe-west1  35.195.103.23  RESERVED
+```
+
+Создали контроллеры и ноды
+```bash
+$ gcloud compute instances list
+
+NAME          ZONE            MACHINE_TYPE   PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP     STATUS
+controller-0  europe-west1-b  n1-standard-1               10.240.0.10  35.190.220.36   RUNNING
+controller-1  europe-west1-b  n1-standard-1               10.240.0.11  35.187.123.230  RUNNING
+controller-2  europe-west1-b  n1-standard-1               10.240.0.12  35.187.79.173   RUNNING
+worker-0      europe-west1-b  n1-standard-1               10.240.0.20  104.155.81.10   RUNNING
+worker-1      europe-west1-b  n1-standard-1               10.240.0.21  146.148.5.123   RUNNING
+worker-2      europe-west1-b  n1-standard-1               10.240.0.22  35.195.248.85   RUNNING
+```
+
+### 7. etcd
+```bash
+f3ex@controller-2:~$ ETCDCTL_API=3 etcdctl member list
+3a57933972cb5131, started, controller-2, https://10.240.0.12:2380, https://10.240.0.12:2379
+f98dc20bce6225a0, started, controller-0, https://10.240.0.10:2380, https://10.240.0.10:2379
+ffed16798470cab5, started, controller-1, https://10.240.0.11:2380, https://10.240.0.11:2379
+```
+
+### 8. LB
+```bash
+$ curl --cacert ca.pem https://${KUBERNETES_PUBLIC_ADDRESS}:6443/version
+
+{
+  "major": "1",
+  "minor": "9",
+  "gitVersion": "v1.9.0",
+  "gitCommit": "925c127ec6b946659ad0fd596fa959be43f0cc05",
+  "gitTreeState": "clean",
+  "buildDate": "2017-12-15T20:55:30Z",
+  "goVersion": "go1.9.2",
+  "compiler": "gc",
+  "platform": "linux/amd64"
+}
+```
+
+### 9.
+
+```bash
+f3ex@controller-0:~$ kubectl get nodes
+NAME       STATUS    ROLES     AGE       VERSION
+worker-0   Ready     <none>    2m        v1.9.0
+worker-1   Ready     <none>    52s       v1.9.0
+worker-2   Ready     <none>    7s        v1.9.0
+```
+
+### 10.
+
+```bash
+f3ex at MacBook-Pro-f3ex in ~/otus/DevOps/f4rx_microservices/kubernetes/kubernetes_the_hard_way (kubernetes-1●●)
+$ kubectl get componentstatuses
+
+NAME                 STATUS    MESSAGE              ERROR
+controller-manager   Healthy   ok
+scheduler            Healthy   ok
+etcd-2               Healthy   {"health": "true"}
+etcd-0               Healthy   {"health": "true"}
+etcd-1               Healthy   {"health": "true"}
+
+f3ex at MacBook-Pro-f3ex in ~/otus/DevOps/f4rx_microservices/kubernetes/kubernetes_the_hard_way (kubernetes-1●●)
+$ kubectl get nodes
+
+NAME       STATUS    ROLES     AGE       VERSION
+worker-0   Ready     <none>    30m       v1.9.0
+worker-1   Ready     <none>    28m       v1.9.0
+worker-2   Ready     <none>    28m       v1.9.0
+```
+
+### 11.
+
+```bash
+$ for instance in worker-0 worker-1 worker-2; do
+  gcloud compute instances describe ${instance} \
+    --format 'value[separator=" "](networkInterfaces[0].networkIP,metadata.items[0].value)'
+done
+10.240.0.20 10.200.0.0/24
+10.240.0.21 10.200.1.0/24
+10.240.0.22 10.200.2.0/24
+```
+
+```bash
+$ gcloud compute routes list --filter "network: kubernetes-the-hard-way"
+
+NAME                            NETWORK                  DEST_RANGE     NEXT_HOP                  PRIORITY
+default-route-18353f1dd5d990e8  kubernetes-the-hard-way  0.0.0.0/0      default-internet-gateway  1000
+default-route-61f7e48458f6f541  kubernetes-the-hard-way  10.240.0.0/24                            1000
+kubernetes-route-10-200-0-0-24  kubernetes-the-hard-way  10.200.0.0/24  10.240.0.20               1000
+kubernetes-route-10-200-1-0-24  kubernetes-the-hard-way  10.200.1.0/24  10.240.0.21               1000
+kubernetes-route-10-200-2-0-24  kubernetes-the-hard-way  10.200.2.0/24  10.240.0.22               1000
+```
+
+### 12.
+```bash
+$ kubectl create -f https://storage.googleapis.com/kubernetes-the-hard-way/kube-dns.yaml
+
+service "kube-dns" created
+serviceaccount "kube-dns" created
+configmap "kube-dns" created
+deployment "kube-dns" created
+```
+
+```bash
+$ kubectl get pods -l k8s-app=kube-dns -n kube-system
+
+NAME                        READY     STATUS    RESTARTS   AGE
+kube-dns-6c857864fb-tc7g6   3/3       Running   0          28s
+```
+
+Проверка
+```bash
+f3ex at MacBook-Pro-f3ex in ~/otus/DevOps/f4rx_microservices/kubernetes/kubernetes_the_hard_way (kubernetes-1●●)
+$ kubectl get pods -l k8s-app=kube-dns -n kube-system
+
+NAME                        READY     STATUS    RESTARTS   AGE
+kube-dns-6c857864fb-tc7g6   3/3       Running   0          28s
+
+f3ex at MacBook-Pro-f3ex in ~/otus/DevOps/f4rx_microservices/kubernetes/kubernetes_the_hard_way (kubernetes-1●●)
+$ kubectl run busybox --image=busybox --command -- sleep 3600
+
+deployment "busybox" created
+
+f3ex at MacBook-Pro-f3ex in ~/otus/DevOps/f4rx_microservices/kubernetes/kubernetes_the_hard_way (kubernetes-1●●)
+$ kubectl get pods -l run=busybox
+
+NAME                       READY     STATUS    RESTARTS   AGE
+busybox-855686df5d-84d42   1/1       Running   0          9s
+
+f3ex at MacBook-Pro-f3ex in ~/otus/DevOps/f4rx_microservices/kubernetes/kubernetes_the_hard_way (kubernetes-1●●)
+$ POD_NAME=$(kubectl get pods -l run=busybox -o jsonpath="{.items[0].metadata.name}")
+
+
+f3ex at MacBook-Pro-f3ex in ~/otus/DevOps/f4rx_microservices/kubernetes/kubernetes_the_hard_way (kubernetes-1●●)
+$ kubectl exec -ti $POD_NAME -- nslookup kubernetes
+
+Server:    10.32.0.10
+Address 1: 10.32.0.10 kube-dns.kube-system.svc.cluster.local
+
+Name:      kubernetes
+Address 1: 10.32.0.1 kubernetes.default.svc.cluster.local
+```
+
+### 13. Smoke Test
+
+Все ок, согласно гайду
+```bash
+$ curl -I http://${EXTERNAL_IP}:${NODE_PORT}
+
+HTTP/1.1 200 OK
+Server: nginx/1.13.9
+Date: Sun, 18 Mar 2018 15:34:19 GMT
+Content-Type: text/html
+Content-Length: 612
+Last-Modified: Tue, 20 Feb 2018 12:21:20 GMT
+Connection: keep-alive
+ETag: "5a8c12c0-264"
+Accept-Ranges: bytes
+```
+
+## Основное задание
+
+>Проверьте, что kubectl apply -f <filename> проходит по созданным
+до этого deployment-ам (ui, post, mongo, comment) и поды
+запускаются
+
+```bash
+$ kubectl get pods
+NAME                                 READY     STATUS    RESTARTS   AGE
+busybox-855686df5d-84d42             1/1       Running   0          9m
+comment-deployment-689fb57d4-hx56w   1/1       Running   0          1m
+mongo-deployment-74cccfb8-gcps5      1/1       Running   0          1m
+nginx-8586cf59-swqtp                 1/1       Running   0          7m
+post-deployment-6d958b5db-r58qj      1/1       Running   0          3m
+ui-deployment-5c87b8c57d-crckl       1/1       Running   0          1m
+```
+
+После чего кластер разобран согласно https://github.com/kelseyhightower/kubernetes-the-hard-way/blob/master/docs/14-cleanup.md
 
 # HW 27 Swarm-1
 
