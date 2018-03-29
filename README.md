@@ -5,8 +5,11 @@ Table of Contents
 
    * [Aleksey Stepanenko](#aleksey-stepanenko)
    * [Table of Contents](#table-of-contents)
+   * [HW 29](#hw-29)
+      * [Kubernetes-2](#kubernetes-2)
+      * [Google K8s Engine](#google-k8s-engine)
    * [HW 28](#hw-28)
-      * [Kubernetes The Hard Way](#kubernetes-the-hard-way)
+      * [Kubernetes-1 The Hard Way](#kubernetes-1-the-hard-way)
          * [1. Prerequisites](#1-prerequisites)
          * [2. cfssl, cfssljson, and kubectl.](#2-cfssl-cfssljson-and-kubectl)
          * [3. Сеть, Firewall](#3-Сеть-firewall)
