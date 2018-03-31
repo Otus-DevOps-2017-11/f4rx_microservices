@@ -58,6 +58,69 @@ Table of Contents
 
 Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 
+# HW 30
+
+## Kubernetes-3
+
+```bash
+$ kubectl get services -n dev
+NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+comment      ClusterIP   10.39.250.241   <none>        9292/TCP         2d
+comment-db   ClusterIP   10.39.251.46    <none>        27017/TCP        2d
+mongodb      ClusterIP   10.39.240.106   <none>        27017/TCP        2d
+post         ClusterIP   10.39.250.194   <none>        5000/TCP         2d
+post-db      ClusterIP   10.39.255.19    <none>        27017/TCP        2d
+ui           NodePort    10.39.244.14    <none>        9292:32093/TCP   2d
+```
+
+```bash
+f3ex at MacBook-Pro-f3ex in ~/otus/DevOps/f4rx_microservices/kubernetes (kubernetes-3●)
+$ kubectl get pods -n dev
+NAME                       READY     STATUS    RESTARTS   AGE
+comment-6d68f4f6d5-2mhtp   1/1       Running   0          2h
+comment-6d68f4f6d5-5n4kx   1/1       Running   0          8h
+comment-6d68f4f6d5-8klkz   1/1       Running   0          5h
+mongo-77dcb74cd5-d5js2     1/1       Running   0          2d
+post-5bc4b449f-5zgs2       1/1       Running   0          2d
+post-5bc4b449f-6s74p       1/1       Running   0          2d
+post-5bc4b449f-xh2tj       1/1       Running   0          2d
+ui-6b4d654587-476qz        1/1       Running   0          2d
+ui-6b4d654587-52k6v        1/1       Running   0          2d
+ui-6b4d654587-nd6mm        1/1       Running   0          2d
+
+f3ex at MacBook-Pro-f3ex in ~/otus/DevOps/f4rx_microservices/kubernetes (kubernetes-3●)
+$ kubectl exec -ti -n dev ui-6b4d654587-nd6mm ping comment
+ping: bad address 'comment'
+command terminated with exit code 1
+
+f3ex at MacBook-Pro-f3ex in ~/otus/DevOps/f4rx_microservices/kubernetes (kubernetes-3●)
+$ kubectl scale deployment --replicas 1 -n kube-system kube-dnsautoscaler
+Error from server (NotFound): deployments.extensions "kube-dnsautoscaler" not found
+
+f3ex at MacBook-Pro-f3ex in ~/otus/DevOps/f4rx_microservices/kubernetes (kubernetes-3●)
+$ kubectl scale deployment --replicas 1 -n kube-system kube-dns-autoscaler
+deployment "kube-dns-autoscaler" scaled
+
+f3ex at MacBook-Pro-f3ex in ~/otus/DevOps/f4rx_microservices/kubernetes (kubernetes-3●)
+$ kubectl exec -ti -n dev ui-6b4d654587-nd6mm ping comment
+ping: bad address 'comment'
+command terminated with exit code 1
+
+f3ex at MacBook-Pro-f3ex in ~/otus/DevOps/f4rx_microservices/kubernetes (kubernetes-3●)
+$ kubectl exec -ti -n dev ui-6b4d654587-nd6mm ping comment
+PING comment (10.39.250.241): 56 data bytes
+
+
+^C
+--- comment ping statistics ---
+21 packets transmitted, 0 packets received, 100% packet loss
+command terminated with exit code 1
+```
+
+Приложение открывается по адресу http://35.205.164.177:32093/
+
+
+
 # HW 29
 
 ## Kubernetes-2
