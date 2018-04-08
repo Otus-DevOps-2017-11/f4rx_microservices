@@ -5,8 +5,11 @@ Table of Contents
 
    * [Aleksey Stepanenko](#aleksey-stepanenko)
    * [Table of Contents](#table-of-contents)
+   * [HW 29](#hw-29)
+      * [Kubernetes-2](#kubernetes-2)
+      * [Google K8s Engine](#google-k8s-engine)
    * [HW 28](#hw-28)
-      * [Kubernetes The Hard Way](#kubernetes-the-hard-way)
+      * [Kubernetes-1 The Hard Way](#kubernetes-1-the-hard-way)
          * [1. Prerequisites](#1-prerequisites)
          * [2. cfssl, cfssljson, and kubectl.](#2-cfssl-cfssljson-and-kubectl)
          * [3. Сеть, Firewall](#3-Сеть-firewall)
@@ -55,9 +58,108 @@ Table of Contents
 
 Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 
+# HW 29
+
+## Kubernetes-2
+
+```bash
+#Проверяю версию
+$ kubectl version
+
+Client Version: version.Info{Major:"1", Minor:"9", GitVersion:"v1.9.0", GitCommit:"925c127ec6b946659ad0fd596fa959be43f0cc05", GitTreeState:"clean", BuildDate:"2017-12-15T21:07:38Z", GoVersion:"go1.9.2", Compiler:"gc", Platform:"darwin/amd64"}
+```
+Установка Minukube
+```bash
+brew cask install minikube 
+```
+
+Запускаем миникуб
+```bash
+$ minikube start
+Starting local Kubernetes v1.9.4 cluster...
+Starting VM...
+Downloading Minikube ISO
+ 142.22 MB / 142.22 MB [============================================] 100.00% 0s
+Getting VM IP address...
+Moving files into cluster...
+Downloading localkube binary
+ 163.02 MB / 163.02 MB [============================================] 100.00% 0s
+ 0 B / 65 B [----------------------------------------------------------]   0.00%
+ 65 B / 65 B [======================================================] 100.00% 0sSetting up certs...
+Connecting to cluster...
+Setting up kubeconfig...
+Starting cluster components...
+Kubectl is now configured to use the cluster.
+Loading cached images from config file.
+```
+Наш Minikube-кластер развернут. При этом автоматически был настроен конфиг kubectl.
+```bash
+$ kubectl get nodes
+NAME       STATUS    ROLES     AGE       VERSION
+minikube   Ready     <none>    4m        v1.9.4
+```
+
+```bash
+$  kubectl config get-contexts
+CURRENT   NAME                      CLUSTER                   AUTHINFO   NAMESPACE
+          kubernetes-the-hard-way   kubernetes-the-hard-way   admin
+*         minikube                  minikube                  minikube
+
+$ kubectl config get-contexts
+CURRENT   NAME                      CLUSTER                   AUTHINFO   NAMESPACE
+          kubernetes-the-hard-way   kubernetes-the-hard-way   admin
+*         minikube                  minikube                  minikube
+```
+
+```bash
+$ kubectl apply -f ui-deployment.yml
+deployment "ui" created
+
+$ kubectl get deployment
+NAME      DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+ui        3         3         3            0           9s
+```
+
+```bash
+$ kubectl get pods --selector component=ui
+NAME                 READY     STATUS    RESTARTS   AGE
+ui-55d99c987-2qzfq   1/1       Running   0          30m
+ui-55d99c987-4jp5t   1/1       Running   0          30m
+ui-55d99c987-m2mvp   1/1       Running   0          30m
+
+$ kubectl port-forward ui-55d99c987-2qzfq 8080:9292
+Forwarding from 127.0.0.1:8080 -> 9292
+
+open http://127.0.0.1:8080/
+```
+
+```bash
+$ minikube service list
+|-------------|----------------------|-----------------------------|
+|  NAMESPACE  |         NAME         |             URL             |
+|-------------|----------------------|-----------------------------|
+| default     | comment              | No node port                |
+| default     | comment-db           | No node port                |
+| default     | kubernetes           | No node port                |
+| default     | mongodb              | No node port                |
+| default     | post                 | No node port                |
+| default     | post-db              | No node port                |
+| default     | ui                   | http://192.168.99.101:32092 |
+| kube-system | kube-dns             | No node port                |
+| kube-system | kubernetes-dashboard | http://192.168.99.101:30000 |
+|-------------|----------------------|-----------------------------|
+```
+
+## Google K8s Engine
+
+![K8s engine-1](images/hw29_k8s-2-1.png?raw=true "hw29_k8s-2-1.png")
+![K8s engine-2](images/hw29_k8s-2-2.png?raw=true "hw29_k8s-2-2.png")
+![K8s engine-3](images/hw29_k8s-2-3.png?raw=true "hw29_k8s-2-3.png")
+
+
 # HW 28
 
-## Kubernetes The Hard Way
+## Kubernetes-1 The Hard Way
 
 Развернуть лабу согласно с гайдом https://github.com/kelseyhightower/kubernetes-the-hard-way/
 
