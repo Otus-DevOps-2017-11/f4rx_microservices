@@ -1,0 +1,8 @@
+---
+name: comment
+version: 1.0.0
+description: OTUS reddit application Post
+maintainers:
+ - name: Aleksey Stepanenko
+   email: f1ex@inbox.ru
+appVersion: 1.0 
