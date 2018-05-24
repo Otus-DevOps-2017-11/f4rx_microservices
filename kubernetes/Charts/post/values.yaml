@@ -1,0 +1,10 @@
+---
+service:
+  internalPort: 5000
+  externalPort: 5000
+
+image:
+  repository: f3ex/post
+  tag: latest
+
+databaseHost:
